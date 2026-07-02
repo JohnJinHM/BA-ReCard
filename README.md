@@ -69,9 +69,14 @@ To refresh the database, re-run BA-UnitDump and replace `public/data/`.
 - Layout numbers, palette (`#1E1E1E` / `#E7F8E5` / `#F4D42A` / `#F66B06`),
   and Inter font sizes come from the extracted prefabs
   (docs/extracted/PREFAB_LAYOUT.md).
-- Icons follow the game's `InfocardConfig` sprite map; ranges are displayed
-  with its `EffectiveRangeMultiplier` (×2). Speeds are stored in km/h.
+- Icons follow the game's `InfocardConfig` sprite map; ranges, blast radius and
+  dispersion are displayed with its `EffectiveRangeMultiplier` (×2); damage,
+  speeds, optics and weight display raw (calibrated against `/samples`).
 - `Options.Cost` is a delta on base cost; `ReplaceUnitId` swaps the base unit.
+- `Units.CategoryType` is **0-based** in the shipped database (0=Recon …
+  6=Aircrafts) even though the native enum dump reads 1-based.
+- Card labels use the game's own localization keys (`ui_infocard_*`,
+  `ui_enum_*`), so the language toggle (eng/chi) localizes the whole card.
 
 ## Roadmap
 

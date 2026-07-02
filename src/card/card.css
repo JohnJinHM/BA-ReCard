@@ -1,6 +1,8 @@
-/* In-game "Unit Info Card" layout — numbers from docs/extracted/PREFAB_LAYOUT.md:
-   408x710 card, top hero bar 274px, 1px divider, bottom weapons area 435px
-   (108px weapon list | 1px divider | ~299px detail). Colors/fonts per prefab. */
+/* In-game "Unit Info Card" layout — numbers from docs/extracted/PREFAB_LAYOUT.md,
+   refined against the in-game screenshots in /samples:
+   408 wide; 274px portrait hero with the stats row overlaying its bottom 64px;
+   1px divider; weapons area below (expanded: 108px list | divider | detail;
+   compact: rows). */
 
 .unit-card {
   --c-panel: rgba(30, 30, 30, 0.8);      /* #1E1E1ECC */
@@ -43,11 +45,13 @@
 
 .img-missing { display: inline-block; min-width: 12px; min-height: 12px; }
 
-/* ── Top Info Bar (408x274) ─────────────────────────────────── */
-.top-info-bar {
+/* ── Top Info Bar: 274px hero; the stats row overlays its bottom 64px
+      (portraits are 816×550 ≈ 408×275, made legible by the bottom gradient) */
+.top-info-bar { flex: none; display: flex; flex-direction: column; }
+
+.hero {
   position: relative;
   height: 274px;
-  flex: none;
   background: var(--c-panel-solid);
   overflow: hidden;
 }
@@ -73,9 +77,8 @@ span.hero-portrait { position: absolute; inset: 0; }
   align-items: flex-start;
   gap: 8px;
   padding: 12px 12px 0 16px;
-  min-height: 48px;
+  min-height: 44px;
 }
-.card-flag { width: 27px; height: 18px; object-fit: cover; margin-top: 3px; }
 .unit-name {
   flex: 1;
   font-size: 20px;
@@ -88,89 +91,136 @@ span.hero-portrait { position: absolute; inset: 0; }
 .points-value { font-size: 20px; font-weight: 800; letter-spacing: 0.06em; color: var(--c-yellow); }
 .points-icon { width: 24px; height: 24px; }
 
-.abilities-row {
-  position: absolute;
-  top: 52px;
-  right: 10px;
-  display: flex;
-  gap: 12px;
-}
-.ability-item { position: relative; width: 32px; height: 32px; }
-.ability-icon { width: 32px; height: 32px; }
-.ability-count {
-  position: absolute;
-  right: -4px;
-  bottom: -2px;
-  min-width: 12px;
-  height: 12px;
-  padding: 0 3px;
-  border-radius: 6px;
-  background: var(--c-green);
-  color: var(--c-badge-text);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 12px;
-  text-align: center;
-}
-
-/* armor overlay (vehicles) */
-.armor-overlay { position: absolute; inset: 92px 12px 68px 16px; pointer-events: none; }
-.armor-overlay .editable { pointer-events: auto; }
+/* kinetic / HEAT armor-type logos — top-left under the name, as in the
+   in-game screenshots (/samples); HEAT tinted like its armor values */
 .armor-type-icons {
   position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 52px;
+  left: 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
-.armor-type-icons img { width: 22px; height: 22px; }
-.armor-type-icons img.heat { filter: none; }
-.armor-block { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 1px; }
-.armor-block.pos-top { top: 0; left: 50%; transform: translateX(-50%); }
-.armor-block.pos-rear { top: 0; right: 0; }
-.armor-block.pos-front { bottom: 0; left: 34px; }
-.armor-block.pos-sides { bottom: 0; right: 0; }
-.armor-title { font-size: 14px; font-weight: 400; letter-spacing: 0.06em; text-shadow: 0 1px 2px #000; }
-.armor-values { display: flex; gap: 8px; }
-.armor-kin, .armor-heat { font-size: 14px; font-weight: 800; letter-spacing: 0.06em; text-shadow: 0 1px 2px #000; }
+.armor-type-icon { width: 28px; height: 28px; }
+
+/* right strip: abilities + amphibious/airdrop tags, bottom-right */
+.right-strip-divider {
+  position: absolute;
+  right: 62px;
+  top: 48px;
+  bottom: 64px;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(255, 255, 255, 0.4) 22%,
+    rgba(255, 255, 255, 0.4) 78%,
+    transparent
+  );
+}
+.tags-col {
+  position: absolute;
+  right: 8px;
+  bottom: 74px; /* above the stats overlay */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px; /* room for the pill hanging under the last icon */
+}
+.tag-item { position: relative; width: 34px; height: 34px; }
+.tag-icon { width: 34px; height: 34px; object-fit: contain; }
+.tag-pill {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -8px;
+  background: var(--c-green);
+  color: var(--c-badge-text);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 13px;
+  white-space: nowrap;
+}
+
+/* armor overlay (ground vehicles): Top upper-center, Rear upper-right,
+   Front lower-left, Sides lower-right — spanning ~2/3 card width and the
+   full hero height between the name row and the bottom gradient. */
+.armor-overlay {
+  position: absolute;
+  left: 40px;
+  right: 100px; /* keeps clear of the right ability strip */
+  top: 48px;
+  bottom: 70px; /* stays above the stats overlay */
+  pointer-events: none;
+}
+.armor-overlay .editable { pointer-events: auto; }
+.armor-block { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.armor-block.pos-top { top: 0; left: 42%; transform: translateX(-50%); }
+.armor-block.pos-rear { top: 0; right: 0; align-items: flex-start; }
+.armor-block.pos-front { bottom: 12px; left: 0; align-items: flex-start; }
+.armor-block.pos-sides { bottom: 6px; right: 6%; }
+.armor-title {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+.armor-values { display: flex; }
+.armor-values.row { flex-direction: row; gap: 8px; }
+.armor-values.col { flex-direction: column; gap: 0; align-items: flex-start; }
+.armor-kin, .armor-heat {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+}
 .armor-heat { color: var(--c-heat); }
 
-.stats-row {
+/* stats row: transparent overlay on the portrait's bottom 64px (the bottom
+   gradient strip provides the darkening), unit-less values */
+.stats-divider {
   position: absolute;
-  left: 16px;
+  left: 8px;
+  right: 8px;
+  bottom: 64px;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.45) 12%,
+    rgba(255, 255, 255, 0.45) 88%,
+    transparent
+  );
+}
+.stats-strip {
+  position: absolute;
+  left: 0;
   right: 0;
   bottom: 0;
   height: 64px;
   display: flex;
-  gap: 14px;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 0 8px;
 }
 .stat-item {
-  width: 50px;
-  height: 70px;
-  padding: 10px 0;
+  min-width: 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
-.stat-icon { width: 32px; height: 32px; object-fit: contain; }
-.stat-caption { font-size: 12px; font-weight: 400; text-align: center; white-space: nowrap; text-shadow: 0 1px 2px #000; }
-
-.dlc-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background: var(--c-dlc);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 8px;
+.stat-icon { width: 30px; height: 30px; object-fit: contain; }
+.stat-caption {
+  font-size: 12px;
+  font-weight: 400;
+  text-align: center;
+  white-space: nowrap;
 }
 
-/* ── Bottom Info Bar (408x435) ──────────────────────────────── */
+/* ── Bottom Info Bar, expanded (weapon list | detail) ───────── */
 .bottom-info-bar { display: flex; flex: 1; min-height: 435px; align-items: stretch; }
 
 .weapon-list {
@@ -184,11 +234,12 @@ span.hero-portrait { position: absolute; inset: 0; }
   appearance: none;
   background: none;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   color: var(--c-text);
   font-family: inherit;
-  font-size: 11px;
-  padding: 8px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 6px;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -197,8 +248,21 @@ span.hero-portrait { position: absolute; inset: 0; }
 }
 .weapon-list-btn:hover { background: rgba(255, 255, 255, 0.1); }
 .weapon-list-btn.active { background: rgba(255, 255, 255, 0.2); }
-.weapon-list-icon { width: 96px; height: 36px; object-fit: contain; }
+/* weapon silhouettes face right in the assets; the game shows them mirrored */
+.weapon-list-icon { width: 72px; height: 28px; object-fit: contain; transform: scaleX(-1); }
 .weapon-list-name { text-align: center; line-height: 1.2; }
+.weapon-count {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: var(--c-green);
+  color: var(--c-badge-text);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 13px;
+}
 
 .weapon-detail {
   flex: 1;
@@ -209,9 +273,9 @@ span.hero-portrait { position: absolute; inset: 0; }
   gap: 15px;
   overflow-y: auto;
 }
-.weapon-top-bar { display: flex; align-items: center; min-height: 24px; padding-left: 4px; }
+.weapon-top-bar { display: flex; align-items: center; min-height: 24px; padding-left: 12px; }
 .weapon-title { flex: 1; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; }
-.weapon-traits { display: flex; gap: 8px; padding-right: 32px; min-width: 60px; justify-content: flex-end; }
+.weapon-traits { display: flex; gap: 8px; padding-right: 32px; justify-content: flex-end; }
 .trait-icon { width: 24px; height: 24px; object-fit: contain; }
 
 .weapon-stats { display: flex; flex-direction: column; }
@@ -219,22 +283,32 @@ span.hero-portrait { position: absolute; inset: 0; }
   display: flex;
   align-items: center;
   min-height: 20px;
-  padding: 0 32px 0 10px;
+  padding: 0 32px 0 12px;
+  gap: 8px;
 }
 .stats-item-label { min-width: 130px; font-size: 12px; font-weight: 400; }
 .stats-item-value { flex: 1; text-align: right; font-size: 12px; font-weight: 600; }
 
 .ammo-block { display: flex; flex-direction: column; gap: 2px; }
-.ammo-block-title { padding-left: 10px; font-size: 12px; font-weight: 400; margin-bottom: 4px; }
 .ammo-info {
-  padding-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
   margin: 0 4px;
 }
-.ammo-top-row { display: flex; align-items: center; gap: 4px; padding: 0 12px 0 4px; }
+.ammo-info::before {
+  content: '';
+  height: 1px;
+  margin-bottom: 8px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.35) 12%,
+    rgba(255, 255, 255, 0.35) 88%,
+    transparent
+  );
+}
+.ammo-top-row { display: flex; align-items: center; gap: 6px; padding: 0 12px 0 8px; }
 .ammo-image { width: 84px; height: 18px; object-fit: contain; flex: none; }
 .ammo-title { flex: 1; font-size: 12px; font-weight: 800; }
 .ammo-count { min-width: 54px; text-align: right; font-size: 12px; font-weight: 800; }
@@ -252,53 +326,72 @@ span.hero-portrait { position: absolute; inset: 0; }
   color: rgba(231, 248, 229, 0.6);
 }
 
-/* ── Compact mode ───────────────────────────────────────────── */
+/* ── Compact mode (the default view) ────────────────────────── */
 .bottom-compact-bar { display: flex; flex-direction: column; padding-bottom: 6px; }
-.compact-header {
-  height: 28px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 32px;
-  padding-right: 34px;
+
+/* shared column template so header icons align over the value columns */
+.compact-grid {
+  display: grid;
+  grid-template-columns: 1fr 48px 48px 56px;
   align-items: center;
+  column-gap: 6px;
+  padding-right: 12px;
 }
-.compact-header img { width: 20px; height: 20px; }
+.compact-header { height: 28px; }
+.compact-header img { width: 20px; height: 20px; justify-self: center; }
+
 .compact-weapon {
-  min-height: 60px;
-  display: flex;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 124px 1fr;
   align-items: center;
-  background: linear-gradient(to left, rgba(255, 255, 255, 0.1) 256px, transparent 256px);
+  gap: 8px;
+  min-height: 60px;
   margin-top: 2px;
+  /* faint row background: fades in from the left, reaching full strength at
+     the ammo silhouette's position */
+  background: linear-gradient(
+    to right,
+    transparent 118px,
+    rgba(255, 255, 255, 0.05) 158px
+  );
 }
 .compact-weapon-left {
-  width: 124px;
-  flex: none;
+  position: relative;
   display: flex;
   flex-direction: column;
-  padding-left: 8px;
+  padding-left: 10px;
+  gap: 2px;
 }
 .compact-weapon-name { font-size: 12px; font-weight: 600; color: #fff; }
-.compact-weapon-icon { width: 124px; height: 48px; object-fit: contain; transform: scaleX(-1); }
-.compact-ammo-col { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 5px 0; }
-.compact-ammo { display: flex; align-items: center; }
-.compact-ammo-main { display: flex; flex-direction: column; gap: 2px; }
-.compact-ammo-main .ammo-image { width: 84px; height: 18px; }
+/* mirrored, like the in-game silhouettes */
+.compact-weapon-icon { width: 104px; height: 40px; object-fit: contain; transform: scaleX(-1); }
+.compact-weapon-left .weapon-count { top: 18px; right: 2px; }
+
+.compact-ammo-col { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
+/* pills overlap the ammo silhouette, like in game: yellow range pill at the
+   top-left of the shell, green count pill at its right end */
+.compact-ammo-main {
+  position: relative;
+  height: 26px;
+  min-width: 0;
+}
+.compact-ammo-main .ammo-image {
+  position: absolute;
+  left: 12px;
+  top: 6px;
+  width: 72px;
+  height: 18px;
+}
 .pill {
-  align-self: flex-start;
-  border-radius: 7px;
-  padding: 0 6px;
+  border-radius: 3px;
+  padding: 0 2px;
   font-size: 10px;
   font-weight: 700;
   line-height: 14px;
   color: var(--c-badge-text);
+  white-space: nowrap;
 }
-.pill.yellow { background: var(--c-yellow); }
-.pill.green { background: var(--c-green); }
-.compact-ammo-stats {
-  display: flex;
-  gap: 12px;
-  padding-left: 16px;
-  align-items: center;
-}
-.compact-stat { width: 40px; font-size: 12px; font-weight: 600; text-align: center; }
+.pill.yellow { background: var(--c-yellow); position: absolute; left: 0; top: 0; z-index: 1; }
+.pill.green { background: var(--c-green); position: absolute; right: 0; bottom: -2px; z-index: 1; }
+.compact-stat { font-size: 12px; font-weight: 600; text-align: center; justify-self: center; }
+.compact-stat.heat { color: var(--c-heat); }

@@ -10,6 +10,7 @@ import type {
   WeaponRow,
 } from './types'
 import type {
+  AbilityLine,
   AmmoModel,
   CardModel,
   StatLine,
@@ -17,13 +18,24 @@ import type {
   WeaponModel,
 } from '../card/model'
 import { EMPTY_VALUE } from '../card/model'
-import { ContentMembership, UnitCategoryType, UnitRole, UnitType, WeaponType } from './enums'
+import {
+  TrajectoryLocKey,
+  TrajectoryType,
+  UnitCategoryType,
+  UnitRole,
+  UnitType,
+  WeaponType,
+  WeaponTypeLocKey,
+} from './enums'
 
 /** Chosen option per modification id; missing entries use the default option. */
 export type VariantSelection = Record<number, number>
 
-// Display formatting knobs, mirroring the game's InfocardConfig
+// Display formatting, mirroring the game's InfocardConfig
 // (docs/extracted/ASSETS.md): RoundDigits 2, EffectiveRangeMultiplier 2.
+// Calibrated against the in-game screenshots in /samples: stat-strip values
+// are unit-less; ranges/blast radius/dispersion are sim values × 2; damage is
+// the raw value (no HUDMultiplier); optics/speed/weight display raw.
 const ROUND_DIGITS = 2
 const EFFECTIVE_RANGE_MULTIPLIER = 2
 
@@ -38,18 +50,14 @@ function fmtInt(n: number | null | undefined): string {
   return String(Math.round(n))
 }
 
-// Mobility speeds are stored in km/h already (rows are named e.g. "70kph").
-function kmh(n: number): string {
-  return `${fmtInt(n)}km/h`
+/** "2 - 3" for min/max pairs, collapsing when equal. */
+function minMax(min: number, max: number, digits = ROUND_DIGITS): string {
+  if (min === max || min <= 0) return fmt(max, digits)
+  return `${fmt(min, digits)} - ${fmt(max, digits)}`
 }
 
-function meters(n: number): string {
-  return `${fmtInt(n)}m`
-}
-
-/** Weapon/sensor range as displayed in game (sim range × config multiplier). */
-function effectiveRange(n: number): string {
-  return meters(n * EFFECTIVE_RANGE_MULTIPLIER)
+function effRange(n: number): number {
+  return n * EFFECTIVE_RANGE_MULTIPLIER
 }
 
 interface ResolvedLoadout {
@@ -60,7 +68,6 @@ interface ResolvedLoadout {
   mobility: MobilityRow | null
   sensors: SensorRow[]
   abilities: AbilityRow[]
-  /** turret slot order → weapon rows (flattened, ordered) */
   weapons: WeaponRow[]
   stealth: number
   portraitFile: string | null
@@ -85,21 +92,6 @@ function resolveBase(db: GameDb, unit: UnitRow): ResolvedLoadout {
     .map((r) => db.abilities.get(r.AbilityId))
     .filter((a): a is AbilityRow => !!a && a.IsDefault)
 
-  // Turret slots: per TurretUnits.Order, the default turret wins.
-  const slotTurrets = new Map<number, number>()
-  const turretRows = [...(db.unitTurrets.get(unit.Id) ?? [])].sort(
-    (a, b) => a.Order - b.Order,
-  )
-  for (const tu of turretRows) {
-    const turret = db.turrets.get(tu.TurretId)
-    if (!turret) continue
-    if (!slotTurrets.has(tu.Order) || turret.IsDefault) {
-      if (turret.IsDefault || !slotTurrets.has(tu.Order)) {
-        slotTurrets.set(tu.Order, tu.TurretId)
-      }
-    }
-  }
-
   return {
     unit,
     cost: unit.Cost,
@@ -108,10 +100,20 @@ function resolveBase(db: GameDb, unit: UnitRow): ResolvedLoadout {
     mobility: pickDefault(mobilities),
     sensors,
     abilities,
-    weapons: weaponsForTurretSlots(db, unit, slotTurrets),
+    weapons: weaponsForTurretSlots(db, unit, turretSlotsOf(db, unit)),
     stealth: unit.Stealth,
     portraitFile: unit.PortraitFileName,
   }
+}
+
+function turretSlotsOf(db: GameDb, unit: UnitRow): Map<number, number> {
+  const slots = new Map<number, number>()
+  for (const tu of [...(db.unitTurrets.get(unit.Id) ?? [])].sort((a, b) => a.Order - b.Order)) {
+    const t = db.turrets.get(tu.TurretId)
+    if (!t) continue
+    if (t.IsDefault || !slots.has(tu.Order)) slots.set(tu.Order, tu.TurretId)
+  }
+  return slots
 }
 
 function weaponsForTurretSlots(
@@ -151,9 +153,11 @@ function applyOption(db: GameDb, loadout: ResolvedLoadout, opt: OptionRow): Reso
   // Option.Cost is a delta on the unit's base cost (e.g. +30 pts for an
   // armor package), not an absolute replacement.
   if (opt.Cost) out.cost = loadout.cost + opt.Cost
-  if (opt.ReplaceUnitName) out.name = db.loc(opt.ReplaceUnitName)
+  if (opt.ReplaceUnitName) out.name = db.cardLoc(opt.ReplaceUnitName)
   else if (opt.ConcatenateWithUnitName)
-    out.name = `${out.name} ${db.loc(opt.ConcatenateWithUnitName)}`
+    // direct concatenation, no separator: "BMP-3" + "M" → "BMP-3M" (the data
+    // carries its own leading space when one is wanted, e.g. " Epokha")
+    out.name = `${out.name}${db.cardLoc(opt.ConcatenateWithUnitName)}`
   if (opt.ArmorId) out.armor = db.armors.get(opt.ArmorId) ?? out.armor
   if (opt.MobilityId) out.mobility = db.mobility.get(opt.MobilityId) ?? out.mobility
   if (opt.StealthOverride) out.stealth = opt.StealthOverride
@@ -170,11 +174,16 @@ function applyOption(db: GameDb, loadout: ResolvedLoadout, opt: OptionRow): Reso
   }
   if (sensorOverrides.length) out.sensors = sensorOverrides
 
+  // Options assign extra abilities (e.g. Su-34 pylon options carry the
+  // ECM/decoy pod); they add to the unit's default abilities, not replace.
   const abilityIds = [opt.Ability1Id, opt.Ability2Id, opt.Ability3Id].filter(Boolean)
   if (abilityIds.length) {
-    out.abilities = abilityIds
-      .map((id) => db.abilities.get(id))
-      .filter((a): a is AbilityRow => !!a)
+    const merged = [...loadout.abilities]
+    for (const id of abilityIds) {
+      const a = db.abilities.get(id)
+      if (a && !merged.some((m) => m.Id === a.Id)) merged.push(a)
+    }
+    out.abilities = merged
   }
 
   // Turret slot overrides
@@ -188,7 +197,6 @@ function applyOption(db: GameDb, loadout: ResolvedLoadout, opt: OptionRow): Reso
     }
   }
   if (turretChanged) {
-    // Merge: keep base slots not overridden
     const baseSlots = turretSlotsOf(db, loadout.unit)
     for (const [slot, tid] of baseSlots) {
       if (!slotTurrets.has(slot)) slotTurrets.set(slot, tid)
@@ -196,18 +204,6 @@ function applyOption(db: GameDb, loadout: ResolvedLoadout, opt: OptionRow): Reso
     out.weapons = weaponsForTurretSlots(db, loadout.unit, slotTurrets)
   }
   return out
-}
-
-function turretSlotsOf(db: GameDb, unit: UnitRow): Map<number, number> {
-  const slots = new Map<number, number>()
-  for (const tu of [...(db.unitTurrets.get(unit.Id) ?? [])].sort((a, b) => a.Order - b.Order)) {
-    const t = db.turrets.get(tu.TurretId)
-    if (!t) continue
-    if (t.IsDefault || !slots.has(tu.Order)) {
-      if (t.IsDefault || !slots.has(tu.Order)) slots.set(tu.Order, tu.TurretId)
-    }
-  }
-  return slots
 }
 
 /** Resolve a unit + variant selection into the full card view model. */
@@ -219,7 +215,6 @@ export function resolveCard(
   let unit = db.units.get(unitId)
   if (!unit) throw new Error(`Unknown unit ${unitId}`)
 
-  // Selected options (default option of each modification when unspecified)
   const mods = [...(db.unitModifications.get(unitId) ?? [])].sort(
     (a, b) => a.Order - b.Order,
   )
@@ -231,7 +226,6 @@ export function resolveCard(
     if (opt) chosen.push(opt)
   }
 
-  // ReplaceUnitId swaps the whole base unit before other overrides.
   for (const opt of chosen) {
     if (opt.ReplaceUnitId) {
       const rep = db.units.get(opt.ReplaceUnitId)
@@ -250,52 +244,80 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout): CardModel {
   const country = db.countries.get(unit.CountryId)
   const armor = lo.armor
   const mob = lo.mobility
-  const mainSensor = pickDefault(lo.sensors) ?? lo.sensors[0] ?? null
-  const isAir = (unit.Type & (UnitType.Helicopter | UnitType.Aircraft)) !== 0
+  // The main sensor is the first SensorUnits row (not IsDefault — most units
+  // list several flagged rows); the card shows its ground optics × 2.
+  const mainSensor = lo.sensors[0] ?? null
   const squad = db.squadMembers.get(unit.Id) ?? []
 
-  // Class suffix used by the game's stat icon set (Forward speed.car etc).
   const isInf = unit.Type === UnitType.Infantry
   const isHel = (unit.Type & UnitType.Helicopter) !== 0
-  const cls = isInf ? 'inf' : isHel ? 'hel' : (unit.Type & UnitType.Aircraft) !== 0 ? 'air' : 'car'
+  const isAir = (unit.Type & UnitType.Aircraft) !== 0
+  const cls = isInf ? 'inf' : isHel ? 'hel' : isAir ? 'air' : 'car'
 
+  // The facing-armor overlay is shown for ground vehicles; other classes get
+  // an "Armor points" entry in the stats strip instead (see AH-1W sample).
+  const hasFacings =
+    !!armor &&
+    (armor.KinArmorFront > 0 || armor.HeatArmorFront > 0 || armor.KinArmorSides > 0)
+  const armorOverlay = !isInf && !isHel && !isAir && hasFacings
+
+  // Stats strip: icon + raw unit-less value (per /samples screenshots).
+  // Vehicles: HP, Seats, Optics, Visibility, Speed, Reverse, Weight.
+  // Helicopters/planes: Armor, HP, Optics, Visibility, Speed, Agility, Weight.
   const stats: StatLine[] = []
   const push = (icon: string | null, label: string, value: string) =>
     stats.push({ icon, label, value })
 
+  const L = (key: string, fallback: string) => db.cardLocOr(key, fallback)
+
+  if (!armorOverlay && armor && armor.ArmorValue > 0)
+    push('Armor', L('ui_infocard_armor', 'Armor points'), fmtInt(armor.ArmorValue))
   if (armor)
     push(
       isInf ? 'Health points.inf' : 'Health points.car',
-      'Health points',
+      L('ui_infocard_health', 'Hit points'),
       fmtInt(armor.MaxHealthPoints),
     )
-  if (isInf && squad.length > 0) push('group', 'Squad size', String(squad.length))
-  if (mob) {
-    push(`Forward speed.${cls}`, 'Max. speed', kmh(mob.MaxSpeedRoad))
-    if (isHel || cls === 'air')
-      push(`Agility turn rate.${cls === 'air' ? 'air' : 'hel'}`, 'Agility', fmt(mob.Agility))
-  }
+  if (isInf && squad.length > 0)
+    push('group', L('ui_infocard_squad_count', 'Squad members count'), String(squad.length))
+  if (unit.InfantrySlots > 0)
+    push('Seats', L('ui_infocard_cargo_seats', 'Seating capacity'), fmtInt(unit.InfantrySlots))
   if (mainSensor) {
-    const optics = Math.max(
-      mainSensor.OpticsGround,
-      mainSensor.OpticsLowAltitude,
-      mainSensor.OpticsHighAltitude,
-    )
-    push('Optics', 'Optics', effectiveRange(optics))
+    // planes have no ground optics; fall back to their air-to-air optics
+    const optics =
+      mainSensor.OpticsGround > 0
+        ? mainSensor.OpticsGround
+        : Math.max(mainSensor.OpticsLowAltitude, mainSensor.OpticsHighAltitude)
+    push('Optics', L('ui_infocard_optics', 'Optics'), fmtInt(effRange(optics)))
   }
-  if (!isInf && !isAir) push('Weight', 'Weight', `${fmt(unit.Weight / 1000, 1)}t`)
-  if (lo.stealth && lo.stealth !== 1) push('Stealth', 'Stealth', 'Good')
-  if (unit.InfantrySlots > 0) push('Seats', 'Transport slots', fmtInt(unit.InfantrySlots))
-  if (mob?.IsAmphibious) push('Amphibious', 'Amphibious', 'Yes')
-  if (mob?.IsAirDroppable) push('airdrop', 'Air-droppable', 'Yes')
+  push('Stealth', L('ui_infocard_stealth', 'Stealth'), fmt(lo.stealth))
+  if (mob) {
+    push(`Forward speed.${cls}`, L('ui_infocard_speed_forward', 'Forward speed'), fmtInt(mob.MaxSpeedRoad))
+    if ((isHel || isAir) && mob.Agility > 0)
+      push(`Agility turn rate.${isAir ? 'air' : 'hel'}`, L('ui_infocard_agility', 'Agility'), fmtInt(mob.Agility))
+    else if (mob.MaxSpeedReverse > 0)
+      push('Speed backwards.car', L('ui_infocard_speed_back', 'Reverse speed'), fmtInt(mob.MaxSpeedReverse))
+  }
+  push('Weight', L('ui_infocard_weight', 'Weight'), fmtInt(unit.Weight))
 
-  const abilities = lo.abilities.map((a) => ({
-    icon: abilityIcon(a, isHel, cls === 'air'),
-    name: a.Name ?? 'Ability',
-    detail: abilityDetail(a),
-  }))
+  // One Ability row can carry several features (e.g. "Sprint Smoke",
+  // "ECM Plane 20" = decoys + ECM) — the game renders one chip per feature.
+  // Rows with no displayable feature ("Empty ability") produce no chips.
+  const abilities: AbilityLine[] = lo.abilities.flatMap((a) =>
+    abilityChips(db, a, isHel, isAir),
+  )
 
-  const weapons = lo.weapons.map((w) => buildWeaponModel(db, unit, w))
+  // Amphibious / airdroppable chips live with the abilities in the
+  // bottom-right column of the portrait, not in the stats strip.
+  const tags: AbilityLine[] = []
+  if (mob?.IsAmphibious)
+    tags.push({ icon: 'Amphibious', name: L('ui_infocard_ability_amphibious', 'Amphibious'), detail: '' })
+  if (mob?.IsAirDroppable)
+    tags.push({ icon: 'airdrop', name: L('ui_infocard_ability_airdropable', 'Airdroppable'), detail: '' })
+
+  const weapons = mergeWeapons(lo.weapons).map(({ weapon, count }) =>
+    buildWeaponModel(db, unit, weapon, count),
+  )
 
   return {
     unitId: unit.Id,
@@ -304,13 +326,9 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout): CardModel {
     countryId: unit.CountryId,
     flagIcon: country?.FlagFileName ?? null,
     portrait: lo.portraitFile,
-    dlcBadge:
-      unit.ContentMembership > 0
-        ? (ContentMembership[unit.ContentMembership] ?? 'DLC')
-        : null,
     categoryLabel: UnitCategoryType[unit.CategoryType] ?? '',
     roleLabel: UnitRole[unit.Role] ?? '',
-    description: db.loc(unit.Description),
+    description: db.cardLoc(unit.Description),
     health: armor ? fmtInt(armor.MaxHealthPoints) : EMPTY_VALUE,
     armor: armor
       ? {
@@ -320,61 +338,125 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout): CardModel {
           top: { kinetic: fmtInt(armor.KinArmorTop), heat: fmtInt(armor.HeatArmorTop) },
         }
       : null,
+    armorOverlay,
+    armorLabels: {
+      front: L('ui_infocard_armor_front', 'Front'),
+      sides: L('ui_infocard_armor_side', 'Sides'),
+      rear: L('ui_infocard_armor_rear', 'Rear'),
+      top: L('ui_infocard_armor_top', 'Top'),
+    },
     stats,
     abilities,
+    tags,
     weapons,
     squadSize: squad.length > 0 ? String(squad.length) : '',
   }
 }
 
-// Icon names follow InfocardConfig's sprite mapping (docs/extracted/ASSETS.md).
-function abilityIcon(a: AbilityRow, isHel: boolean, isAir: boolean): string {
-  if (a.IsRadar) return 'Ability_Radar'
-  if (a.IsLaserDesignator) return 'Laser designation'
-  if (a.IsInfantrySprint) return 'Sprint'
-  if (a.IsSmoke) return 'Smoke screen'
-  if (a.IsAPS) return 'APS'
-  if (a.IsDecoy) return isAir ? 'Countermeasures.air' : isHel ? 'Countermeasures.hel' : 'Countermeasures'
-  if (a.ECMAccuracyMultiplier !== 1 && a.ECMAccuracyMultiplier !== 0) return 'ECM'
-  return 'Modification Icon'
+/** Group identical consecutive weapons (e.g. two Hydra pods → "x2"). */
+function mergeWeapons(rows: WeaponRow[]): { weapon: WeaponRow; count: number }[] {
+  const out: { weapon: WeaponRow; count: number }[] = []
+  for (const w of rows) {
+    const last = out[out.length - 1]
+    if (last && last.weapon.Id === w.Id) last.count++
+    else out.push({ weapon: w, count: 1 })
+  }
+  return out
 }
 
-function abilityDetail(a: AbilityRow): string {
-  if (a.IsSmoke && a.SmokeAmmunitionQuantity) return `x${a.SmokeAmmunitionQuantity}`
-  if (a.IsAPS && a.APSQuantity) return `x${a.APSQuantity}`
-  if (a.IsDecoy && a.DecoyQuantity) return `x${a.DecoyQuantity}`
-  return ''
+// One chip per ability feature; icon names follow InfocardConfig's sprite
+// mapping (docs/extracted/ASSETS.md).
+function abilityChips(db: GameDb, a: AbilityRow, isHel: boolean, isAir: boolean): AbilityLine[] {
+  const chips: AbilityLine[] = []
+  if (a.IsRadar)
+    chips.push({ icon: 'Ability_Radar', name: db.cardLocOr('ui_infocard_ability_radar', 'Radar'), detail: '' })
+  if (a.IsLaserDesignator)
+    chips.push({
+      icon: 'Laser designation',
+      name: db.cardLocOr('ui_infocard_ability_laser', 'Laser designation'),
+      detail: '',
+    })
+  if (a.IsInfantrySprint)
+    chips.push({ icon: 'Sprint', name: db.cardLocOr('ui_infocard_ability_sprint', 'Sprint'), detail: '' })
+  if (a.IsSmoke)
+    chips.push({
+      icon: 'Smoke screen',
+      name: db.cardLocOr('ui_infocard_ability_smoke', 'Smoke grenades'),
+      detail: a.SmokeAmmunitionQuantity ? `x${a.SmokeAmmunitionQuantity}` : '',
+    })
+  if (a.IsAPS)
+    chips.push({
+      icon: 'APS',
+      name: db.cardLocOr('ui_infocard_ability_aps', 'Active protection system'),
+      detail: a.APSQuantity ? `x${a.APSQuantity}` : '',
+    })
+  if (a.IsDecoy)
+    chips.push({
+      icon: isAir ? 'Countermeasures.air' : isHel ? 'Countermeasures.hel' : 'Countermeasures',
+      name: db.cardLocOr('ui_infocard_ability_decoys', 'Decoy flares'),
+      detail: a.DecoyQuantity ? `x${a.DecoyQuantity}` : '',
+    })
+  if (a.ECMAccuracyMultiplier !== 1 && a.ECMAccuracyMultiplier !== 0)
+    chips.push({
+      icon: 'ECM',
+      name: db.cardLocOr('ui_infocard_ability_ecm', 'Electronic countermeasures'),
+      // displayed as accuracy REDUCTION: multiplier 0.7 → "30%"
+      detail: `${Math.round((1 - a.ECMAccuracyMultiplier) * 100)}%`,
+    })
+  return chips
 }
 
-function buildWeaponModel(db: GameDb, unit: UnitRow, w: WeaponRow): WeaponModel {
+function buildWeaponModel(
+  db: GameDb,
+  unit: UnitRow,
+  w: WeaponRow,
+  count: number,
+): WeaponModel {
   const ammoRows = [...(db.unitWeaponAmmo.get(unit.Id) ?? [])]
     .filter((r) => r.WeaponId === w.Id)
     .sort((a, b) => a.Order - b.Order)
 
   const traits: TraitChip[] = []
-  if (w.CanShootOnTheMove) traits.push({ icon: 'Order_Stop', tooltip: 'Can fire on the move' })
-  if (w.AutoLoaded) traits.push({ icon: 'reload', tooltip: 'Autoloader' })
+  // The hand icon marks weapons that CANNOT fire on the move (ui_infocard_weapon_static).
+  if (!w.CanShootOnTheMove)
+    traits.push({ icon: 'Order_Stop', tooltip: db.cardLocOr('ui_infocard_weapon_static', "Can't shoot whilst moving") })
+  if (w.AutoLoaded)
+    traits.push({ icon: 'reload', tooltip: db.cardLocOr('ui_infocard_weapon_autoloader', 'Autoloading') })
 
+  // Format per the AH-1W sample: "Aim time 2 - 3 sec", "Magazine size 150",
+  // "Reload time 15 - 20 sec".
   const stats: StatLine[] = []
-  if (w.MagazineSize > 0) stats.push({ icon: null, label: 'Magazine', value: fmtInt(w.MagazineSize) })
+  if (w.AimTimeMax > 0)
+    stats.push({
+      icon: null,
+      label: db.cardLocOr('ui_infocard_weapon_aimtime', 'Aim time'),
+      value: `${minMax(w.AimTimeMin, w.AimTimeMax)} sec`,
+    })
+  if (w.MagazineSize > 0)
+    stats.push({
+      icon: null,
+      label: db.cardLocOr('ui_infocard_weapon_magazinesize', 'Magazine size'),
+      value: fmtInt(w.MagazineSize),
+    })
   if (w.MagazineReloadTimeMax > 0)
     stats.push({
       icon: null,
-      label: 'Reload time',
-      value: `${fmt((w.MagazineReloadTimeMin + w.MagazineReloadTimeMax) / 2)} s`,
+      label: db.cardLocOr('ui_infocard_weapon_reloadtime', 'Reload time'),
+      value: `${minMax(w.MagazineReloadTimeMin, w.MagazineReloadTimeMax)} sec`,
     })
-  if (w.AimTimeMax > 0)
-    stats.push({ icon: null, label: 'Aim time', value: `${fmt((w.AimTimeMin + w.AimTimeMax) / 2)} s` })
 
   return {
     icon: w.HUDIcon,
-    name: db.loc(w.HUDName) || w.Name || 'Weapon',
-    typeLabel: WeaponType[w.Type] ?? '',
+    name: db.cardLoc(w.HUDName) || w.Name || 'Weapon',
+    count: count > 1 ? `x${count}` : '',
+    typeLabel: db.cardLocOr(WeaponTypeLocKey[w.Type], WeaponType[w.Type] ?? ''),
     traits,
     stats,
+    // WeaponAmmunitions.Quantity is per weapon; merged mounts ("x2") carry
+    // the total (BMP-3 sample: PKT x3 shows the tripled ammo count).
     ammo: ammoRows.map((r) => {
       const a = db.ammunitions.get(r.AmmunitionId)
-      return buildAmmoModel(db, a ?? null, r.Quantity)
+      return buildAmmoModel(db, a ?? null, r.Quantity * count)
     }),
   }
 }
@@ -384,51 +466,84 @@ function buildAmmoModel(db: GameDb, a: AmmunitionRow | null, quantity: number): 
     return {
       icon: null,
       name: 'Unknown',
-      quantity: fmtInt(quantity),
+      quantity: `x${fmtInt(quantity)}`,
+      rangePill: EMPTY_VALUE,
       traits: [],
       stats: [],
-      compact: { damage: EMPTY_VALUE, penetration: EMPTY_VALUE, range: EMPTY_VALUE },
+      compact: { penetration: EMPTY_VALUE, damage: EMPTY_VALUE, accuracy: EMPTY_VALUE, isHeat: false },
     }
   }
-  const traits: TraitChip[] = []
-  // target types (flags enum matching UnitType)
-  if (a.TargetType & UnitType.Infantry)
-    traits.push({ icon: 'Target Type Infantry Icon', tooltip: 'vs Infantry' })
-  if (a.TargetType & UnitType.Vehicle)
-    traits.push({ icon: 'Target Type Vehicles Icon', tooltip: 'vs Vehicles' })
-  if (a.TargetType & UnitType.Helicopter)
-    traits.push({ icon: 'Target Type Helicopters Icon', tooltip: 'vs Helicopters' })
-  if (a.TargetType & UnitType.Aircraft)
-    traits.push({ icon: 'Target Type Aircrafts Icon', tooltip: 'vs Aircraft' })
-  if (a.TargetType & (UnitType.Projectile | UnitType.SEADMissile | UnitType.CruiseMissile))
-    traits.push({ icon: 'Target Type Missiles Icon', tooltip: 'vs Missiles' })
-  if (a.TopArmorAttack) traits.push({ icon: 'Top Attack Type Icon', tooltip: 'Top attack' })
-  if (a.LaserGuided) traits.push({ icon: 'Laser designation', tooltip: 'Laser guided' })
+  const L = (key: string, fallback: string) => db.cardLocOr(key, fallback)
 
+  const traits: TraitChip[] = []
+  if (a.TargetType & UnitType.Infantry)
+    traits.push({ icon: 'Target Type Infantry Icon', tooltip: L('ui_infocard_ammo_target_infantry', 'Target - infantry') })
+  if (a.TargetType & UnitType.Vehicle)
+    traits.push({ icon: 'Target Type Vehicles Icon', tooltip: L('ui_infocard_ammo_target_vehicles', 'Target - vehicles') })
+  if (a.TargetType & UnitType.Helicopter)
+    traits.push({ icon: 'Target Type Helicopters Icon', tooltip: L('ui_infocard_ammo_target_helicopters', 'Target - helicopters') })
+  if (a.TargetType & UnitType.Aircraft)
+    traits.push({ icon: 'Target Type Aircrafts Icon', tooltip: L('ui_infocard_ammo_target_air', 'Target - aircraft') })
+  if (a.TargetType & (UnitType.Projectile | UnitType.SEADMissile | UnitType.CruiseMissile))
+    traits.push({ icon: 'Target Type Missiles Icon', tooltip: L('ui_infocard_ammo_target_missiles', 'Target - missiles') })
+  if (a.TopArmorAttack)
+    traits.push({ icon: 'Top Attack Type Icon', tooltip: L('ui_infocard_ammo_top_attack', 'Top armor damage') })
+  if (a.LaserGuided)
+    traits.push({ icon: 'Laser designation', tooltip: L('ui_infocard_ammo_laser', 'Laser guided') })
+
+  const isHeat = a.ArmorTargeted === 2
+  const armorTypeName =
+    a.ArmorTargeted === 1
+      ? L('ui_infocard_ammo_kinetic', 'Kinetic damage')
+      : isHeat
+        ? L('ui_infocard_ammo_heat', 'Explosive damage')
+        : ''
+  const bestRange = Math.max(a.GroundRange, a.LowAltRange, a.HighAltRange)
+
+  // Expanded panel lines, matching the AH-1W sample exactly:
+  // trajectory, effective range (×2), raw damage, blast radius (×2),
+  // dispersion (×2), "20 - 40 mm Kinetic damage", supply weight in kg.
   const stats: StatLine[] = []
   const push = (label: string, value: string) => stats.push({ icon: null, label, value })
-  push('Damage', fmt(a.Damage * (a.HUDMultiplier || 1)))
-  push('Stress damage', fmt(a.StressDamage))
-  if (a.PenetrationAtMinRange > 0 || a.PenetrationAtGroundRange > 0)
-    push('Penetration', `${fmtInt(a.PenetrationAtMinRange)} → ${fmtInt(a.PenetrationAtGroundRange)} mm`)
-  if (a.GroundRange > 0) push('Range (ground)', effectiveRange(a.GroundRange))
-  if (a.LowAltRange > 0) push('Range (low alt.)', effectiveRange(a.LowAltRange))
-  if (a.HighAltRange > 0) push('Range (high alt.)', effectiveRange(a.HighAltRange))
-  if (a.MuzzleVelocity > 0) push('Muzzle velocity', `${fmtInt(a.MuzzleVelocity)} m/s`)
-  if (a.SupplyCost > 0) push('Supply cost', fmt(a.SupplyCost))
+  if (TrajectoryType[a.TrajectoryType])
+    push(
+      L('ui_infocard_ammo_trajectory', 'Shell trajectory'),
+      db.cardLocOr(TrajectoryLocKey[a.TrajectoryType], TrajectoryType[a.TrajectoryType]!),
+    )
+  if (bestRange > 0)
+    push(L('ui_infocard_ammo_effective_range', 'Effective range'), `${fmtInt(effRange(bestRange))} m`)
+  push(L('ui_infocard_ammo_damage', 'Damage'), fmt(a.Damage))
+  if (a.HealthAOERadius > 0)
+    push(L('ui_infocard_ammo_radius_blast', 'Blast radius'), `${fmtInt(effRange(a.HealthAOERadius))} m`)
+  if (a.DispersionHorizontalRadius > 0 || a.DispersionVerticalRadius > 0)
+    push(
+      L('ui_infocard_ammo_dispersion', 'Dispersion'),
+      `V: ${fmt(effRange(a.DispersionVerticalRadius), 1)}m / H: ${fmt(effRange(a.DispersionHorizontalRadius), 1)}m`,
+    )
+  if (a.PenetrationAtMinRange > 0)
+    push(
+      L('ui_infocard_ammo_penetration', 'Penetration'),
+      `${minMax(Math.min(a.PenetrationAtGroundRange, a.PenetrationAtMinRange), Math.max(a.PenetrationAtGroundRange, a.PenetrationAtMinRange), 0)} mm ${armorTypeName}`.trim(),
+    )
+  if (a.SupplyCost > 0)
+    push(L('ui_infocard_ammo_supply_cost', 'Supply weight'), `${fmt(a.SupplyCost)} kg`)
 
-  const bestRange = Math.max(a.GroundRange, a.LowAltRange, a.HighAltRange)
   return {
     icon: a.HUDIcon,
-    name: db.loc(a.HUDName) || a.Name || 'Ammo',
+    name: db.cardLoc(a.HUDName) || a.Name || 'Ammo',
     quantity: `x${fmtInt(quantity)}`,
+    rangePill: bestRange > 0 ? `${fmtInt(effRange(bestRange))}m` : EMPTY_VALUE,
     traits,
     stats,
     compact: {
-      damage: fmt(a.Damage * (a.HUDMultiplier || 1)),
-      penetration:
-        a.PenetrationAtMinRange > 0 ? `${fmtInt(a.PenetrationAtMinRange)} mm` : EMPTY_VALUE,
-      range: bestRange > 0 ? effectiveRange(bestRange) : EMPTY_VALUE,
+      penetration: a.PenetrationAtMinRange > 0 ? fmtInt(a.PenetrationAtMinRange) : EMPTY_VALUE,
+      damage: fmt(a.Damage),
+      accuracy: a.Seeker
+        ? '100%'
+        : a.DispersionHorizontalRadius > 0
+          ? `${fmt(effRange(a.DispersionHorizontalRadius), 1)}m`
+          : EMPTY_VALUE,
+      isHeat,
     },
   }
 }

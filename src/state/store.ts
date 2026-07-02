@@ -5,9 +5,14 @@ import type { VariantSelection } from '../data/resolve'
 import { resolveCard } from '../data/resolve'
 import type { CardModel } from '../card/model'
 
+export type Lang = 'eng' | 'chi'
+
 interface AppState {
   db: GameDb | null
   loadError: string | null
+  /** UI language (picker/variant panel); the card itself always renders the
+   *  in-game English strings — cards are not localized in the game yet. */
+  lang: Lang
   selectedUnitId: number | null
   selection: VariantSelection
   compact: boolean
@@ -16,6 +21,7 @@ interface AppState {
   card: CardModel | null
 
   load(): Promise<void>
+  setLang(lang: Lang): Promise<void>
   selectUnit(unitId: number | null): void
   selectOption(modificationId: number, optionId: number): void
   setCompact(compact: boolean): void
@@ -32,16 +38,30 @@ function resolve(db: GameDb, unitId: number, selection: VariantSelection): CardM
 export const useAppStore = create<AppState>((set, get) => ({
   db: null,
   loadError: null,
+  lang: 'eng',
   selectedUnitId: null,
   selection: {},
-  compact: false,
+  compact: true, // the game opens cards in compact mode
+
   editMode: false,
   card: null,
 
   async load() {
     try {
-      const db = await loadGameDb()
+      const db = await loadGameDb(get().lang)
       set({ db })
+    } catch (e) {
+      set({ loadError: e instanceof Error ? e.message : String(e) })
+    }
+  },
+
+  async setLang(lang) {
+    if (lang === get().lang) return
+    try {
+      // Only the app UI localizes; the card keeps in-game English strings,
+      // so the current card (and any manual edits) is left untouched.
+      const db = await loadGameDb(lang)
+      set({ lang, db })
     } catch (e) {
       set({ loadError: e instanceof Error ? e.message : String(e) })
     }

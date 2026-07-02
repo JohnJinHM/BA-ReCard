@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useAppStore } from '../state/store'
 import { thumbnailUrl } from '../assets'
-import { UnitCategoryType } from '../data/enums'
+import { UnitCategoryLocKey, UnitCategoryType } from '../data/enums'
 
 /** Arsenal-style unit browser: category tabs + searchable thumbnail grid. */
 export function UnitPicker() {
   const db = useAppStore((s) => s.db)
   const selectedUnitId = useAppStore((s) => s.selectedUnitId)
   const selectUnit = useAppStore((s) => s.selectUnit)
-  const [category, setCategory] = useState<number>(3)
+  const [category, setCategory] = useState<number>(2) // Vehicles tab
   const [query, setQuery] = useState('')
 
   const units = useMemo(() => {
@@ -21,6 +21,15 @@ export function UnitPicker() {
       .sort((a, b) => (a.HUDName ?? '').localeCompare(b.HUDName ?? ''))
   }, [db, category, query])
 
+  // Hide tabs with no armory units (e.g. Logistic in the current data).
+  const categories = useMemo(() => {
+    if (!db) return []
+    const counts = new Map<number, number>()
+    for (const u of db.armoryUnits())
+      counts.set(u.CategoryType, (counts.get(u.CategoryType) ?? 0) + 1)
+    return Object.entries(UnitCategoryType).filter(([id]) => (counts.get(Number(id)) ?? 0) > 0)
+  }, [db])
+
   if (!db) return null
 
   return (
@@ -32,7 +41,7 @@ export function UnitPicker() {
         onChange={(e) => setQuery(e.target.value)}
       />
       <div className="picker-tabs">
-        {Object.entries(UnitCategoryType).map(([id, label]) => (
+        {categories.map(([id, label]) => (
           <button
             key={id}
             className={Number(id) === category && !query ? 'active' : ''}
@@ -41,7 +50,7 @@ export function UnitPicker() {
               setQuery('')
             }}
           >
-            {label}
+            {db.locOr(UnitCategoryLocKey[Number(id)], label)}
           </button>
         ))}
       </div>

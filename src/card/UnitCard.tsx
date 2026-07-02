@@ -6,8 +6,8 @@ import { useAppStore } from '../state/store'
 import './card.css'
 
 // Layout mirrors the game's "Unit Info Card" prefab: 408x710, top hero bar
-// 274px, 1px divider, bottom weapons area 435px with a 108px weapon-list
-// column. Numbers from docs/extracted/PREFAB_LAYOUT.md.
+// 274px (210px portrait + 64px stats strip), 1px divider, bottom weapons area.
+// Geometry from docs/extracted/PREFAB_LAYOUT.md, refined against /samples.
 
 function Img({ src, className, alt, style }: {
   src: string | null
@@ -22,42 +22,71 @@ function Img({ src, className, alt, style }: {
   )
 }
 
+/** Monochrome sprite tinted via CSS mask (game tints these at runtime too). */
+function TintIcon({ src, color, className, title }: {
+  src: string | null
+  color: string
+  className?: string
+  title?: string
+}) {
+  if (!src) return <span className={`${className ?? ''} img-missing`} />
+  const mask = `url("${src}")`
+  return (
+    <span
+      className={className}
+      title={title}
+      style={{
+        display: 'inline-block',
+        backgroundColor: color,
+        WebkitMaskImage: mask,
+        WebkitMaskSize: 'contain',
+        WebkitMaskRepeat: 'no-repeat',
+        WebkitMaskPosition: 'center',
+        maskImage: mask,
+        maskSize: 'contain',
+        maskRepeat: 'no-repeat',
+        maskPosition: 'center',
+      }}
+    />
+  )
+}
+
 export function UnitCard({ card }: { card: CardModel }) {
   const compact = useAppStore((s) => s.compact)
+  const db = useAppStore((s) => s.db)
   const [selectedWeapon, setSelectedWeapon] = useState(0)
-  const weapon = card.weapons[Math.min(selectedWeapon, card.weapons.length - 1)] ?? null
+  const weaponIdx = Math.min(selectedWeapon, card.weapons.length - 1)
+  const weapon = card.weapons[weaponIdx] ?? null
 
   return (
     <div className="unit-card" id="unit-card-root">
       <TopInfoBar card={card} />
       <div className="h-divider" />
-      {compact ? (
+      {card.weapons.length === 0 ? (
+        <div className="bottom-empty-bar">
+          {db?.cardLocOr('ui_infocard_no_weapons', 'Unit has no weapons') ?? 'Unit has no weapons'}
+        </div>
+      ) : compact ? (
         <BottomCompactBar card={card} />
-      ) : card.weapons.length > 0 ? (
+      ) : (
         <div className="bottom-info-bar">
           <div className="weapon-list">
             {card.weapons.map((w, i) => (
               <button
                 key={i}
-                className={`weapon-list-btn ${i === selectedWeapon ? 'active' : ''}`}
+                className={`weapon-list-btn ${i === weaponIdx ? 'active' : ''}`}
                 onClick={() => setSelectedWeapon(i)}
                 title={w.name}
               >
+                {w.count && <span className="weapon-count">{w.count}</span>}
                 <Img className="weapon-list-icon" src={weaponIconUrl(w.icon)} alt={w.name} />
                 <span className="weapon-list-name">{w.name}</span>
               </button>
             ))}
           </div>
           <div className="v-divider" />
-          {weapon && (
-            <WeaponDetail
-              weapon={weapon}
-              index={Math.min(selectedWeapon, card.weapons.length - 1)}
-            />
-          )}
+          {weapon && <WeaponDetail weapon={weapon} index={weaponIdx} />}
         </div>
-      ) : (
-        <div className="bottom-empty-bar">Unit has no weapons</div>
       )}
     </div>
   )
@@ -67,55 +96,77 @@ function TopInfoBar({ card }: { card: CardModel }) {
   const update = useAppStore((s) => s.updateCard)
   return (
     <div className="top-info-bar">
-      <Img className="hero-portrait" src={portraitUrl(card.portrait)} alt={card.name} />
-      <img className="hero-gradient top" src={chromeUrl('Unit Info Card Background Top')} alt="" />
-      <img className="hero-gradient right" src={chromeUrl('Unit Info Card Background Right')} alt="" />
-      <img className="hero-gradient bottom" src={chromeUrl('Unit Info Card Background Bottom')} alt="" />
+      <div className="hero">
+        <Img className="hero-portrait" src={portraitUrl(card.portrait)} alt={card.name} />
+        <img className="hero-gradient top" src={chromeUrl('Unit Info Card Background Top')} alt="" />
+        <img className="hero-gradient right" src={chromeUrl('Unit Info Card Background Right')} alt="" />
+        <img className="hero-gradient bottom" src={chromeUrl('Unit Info Card Background Bottom')} alt="" />
 
-      <div className="name-points-row">
-        {card.flagIcon && <Img className="card-flag" src={flagUrl(card.flagIcon)} alt="flag" />}
-        <EditableText
-          className="unit-name"
-          value={card.name}
-          onChange={(v) => update((c) => void (c.name = v))}
-        />
-        <div className="points-block">
+        <div className="name-points-row">
           <EditableText
-            className="points-value"
-            value={card.cost}
-            onChange={(v) => update((c) => void (c.cost = v))}
+            className="unit-name"
+            value={card.name}
+            onChange={(v) => update((c) => void (c.name = v))}
           />
-          <img className="points-icon" src={iconUrl('Points Icon')!} alt="points" />
-        </div>
-      </div>
-
-      {card.abilities.length > 0 && (
-        <div className="abilities-row">
-          {card.abilities.map((a, i) => (
-            <span className="ability-item" key={i} title={`${a.name}${a.detail ? ` ${a.detail}` : ''}`}>
-              <Img className="ability-icon" src={iconUrl(a.icon)} alt={a.name} />
-              {a.detail && <span className="ability-count">{a.detail.replace(/^x/, '')}</span>}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {card.armor && <ArmorOverlay card={card} />}
-
-      <div className="stats-row">
-        {card.stats.map((s, i) => (
-          <div className="stat-item" key={i} title={s.label}>
-            <Img className="stat-icon" src={iconUrl(s.icon)} alt={s.label} />
+          <div className="points-block">
             <EditableText
-              className="stat-caption"
-              value={s.value}
-              onChange={(v) => update((c) => void (c.stats[i]!.value = v))}
+              className="points-value"
+              value={card.cost}
+              onChange={(v) => update((c) => void (c.cost = v))}
+            />
+            <TintIcon className="points-icon" src={iconUrl('Points Icon')} color="#f4d42a" title="points" />
+          </div>
+        </div>
+
+        {card.armorOverlay && card.armor && (
+          <div className="armor-type-icons">
+            <TintIcon
+              className="armor-type-icon"
+              src={iconUrl('Kinetic Armor Icon')}
+              color="#e7f8e5"
+              title="Kinetic armor"
+            />
+            <TintIcon
+              className="armor-type-icon"
+              src={iconUrl('HEAT Armor Icon')}
+              color="#f66b06"
+              title="HEAT armor"
             />
           </div>
-        ))}
-      </div>
+        )}
+        {card.armorOverlay && card.armor && <ArmorOverlay card={card} />}
 
-      {card.dlcBadge && <span className="dlc-badge">{card.dlcBadge}</span>}
+        <div className="right-strip-divider" />
+        {(card.abilities.length > 0 || card.tags.length > 0) && (
+          <div className="tags-col">
+            {card.tags.map((t, i) => (
+              <span className="tag-item" key={`t${i}`} title={t.name}>
+                <Img className="tag-icon" src={iconUrl(t.icon)} alt={t.name} />
+              </span>
+            ))}
+            {card.abilities.map((a, i) => (
+              <span className="tag-item" key={`a${i}`} title={a.name}>
+                <Img className="tag-icon" src={iconUrl(a.icon)} alt={a.name} />
+                {a.detail && <span className="tag-pill">{a.detail}</span>}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="stats-divider" />
+        <div className="stats-strip">
+          {card.stats.map((s, i) => (
+            <div className="stat-item" key={i} title={s.label}>
+              <Img className="stat-icon" src={iconUrl(s.icon)} alt={s.label} />
+              <EditableText
+                className="stat-caption"
+                value={s.value}
+                onChange={(v) => update((c) => void (c.stats[i]!.value = v))}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
@@ -123,30 +174,30 @@ function TopInfoBar({ card }: { card: CardModel }) {
 function ArmorOverlay({ card }: { card: CardModel }) {
   return (
     <div className="armor-overlay">
-      <div className="armor-type-icons">
-        <img src={iconUrl('Kinetic Armor Icon')!} alt="Kinetic" title="Kinetic armor" />
-        <img className="heat" src={iconUrl('HEAT Armor Icon')!} alt="HEAT" title="HEAT armor" />
-      </div>
-      <ArmorBlock card={card} facing="top" label="Top" className="pos-top" />
-      <ArmorBlock card={card} facing="rear" label="Rear" className="pos-rear" />
-      <ArmorBlock card={card} facing="front" label="Front" className="pos-front" />
-      <ArmorBlock card={card} facing="sides" label="Sides" className="pos-sides" />
+      <ArmorBlock card={card} facing="top" className="pos-top" layout="row" />
+      <ArmorBlock card={card} facing="rear" className="pos-rear" layout="col" />
+      <ArmorBlock card={card} facing="front" className="pos-front" layout="col" />
+      <ArmorBlock card={card} facing="sides" className="pos-sides" layout="row" />
     </div>
   )
 }
 
-function ArmorBlock({ card, facing, label, className }: {
+function ArmorBlock({ card, facing, className, layout }: {
   card: CardModel
   facing: 'front' | 'sides' | 'rear' | 'top'
-  label: string
   className: string
+  layout: 'row' | 'col'
 }) {
   const update = useAppStore((s) => s.updateCard)
   const f = card.armor![facing]
   return (
     <div className={`armor-block ${className}`}>
-      <span className="armor-title">{label}</span>
-      <div className="armor-values">
+      <EditableText
+        className="armor-title"
+        value={card.armorLabels[facing]}
+        onChange={(v) => update((c) => void (c.armorLabels[facing] = v))}
+      />
+      <div className={`armor-values ${layout}`}>
         <EditableText
           className="armor-kin"
           value={f.kinetic}
@@ -169,8 +220,8 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
       <div className="weapon-top-bar">
         <EditableText
           className="weapon-title"
-          value={weapon.name}
-          onChange={(v) => update((c) => void (c.weapons[index]!.name = v))}
+          value={weapon.typeLabel || weapon.name}
+          onChange={(v) => update((c) => void (c.weapons[index]!.typeLabel = v))}
         />
         <div className="weapon-traits">
           {weapon.traits.map((t, i) => (
@@ -197,7 +248,6 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
       </div>
 
       <div className="ammo-block">
-        <span className="ammo-block-title">Munitions:</span>
         {weapon.ammo.map((a, ai) => (
           <div className="ammo-info" key={ai}>
             <div className="ammo-top-row">
@@ -251,10 +301,11 @@ function BottomCompactBar({ card }: { card: CardModel }) {
   const update = useAppStore((s) => s.updateCard)
   return (
     <div className="bottom-compact-bar">
-      <div className="compact-header">
+      <div className="compact-grid compact-header">
+        <span />
         <img src={chromeUrl('Penetration Icon')} alt="Penetration" title="Penetration" />
         <img src={chromeUrl('Damage Icon')} alt="Damage" title="Damage" />
-        <img src={chromeUrl('Accuracy Icon')} alt="Range" title="Range" />
+        <img src={chromeUrl('Accuracy Icon')} alt="Accuracy" title="Accuracy" />
       </div>
       {card.weapons.map((w, wi) => (
         <div className="compact-weapon" key={wi}>
@@ -264,39 +315,46 @@ function BottomCompactBar({ card }: { card: CardModel }) {
               value={w.name}
               onChange={(v) => update((c) => void (c.weapons[wi]!.name = v))}
             />
+            {w.count && <span className="weapon-count">{w.count}</span>}
             <Img className="compact-weapon-icon" src={weaponIconUrl(w.icon)} alt={w.name} />
           </div>
           <div className="compact-ammo-col">
             {w.ammo.map((a, ai) => (
-              <div className="compact-ammo" key={ai}>
+              <div className="compact-grid compact-ammo" key={ai}>
                 <div className="compact-ammo-main">
+                  <EditableText
+                    className="pill yellow"
+                    value={a.rangePill}
+                    onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.rangePill = v))}
+                  />
                   <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
-                  <span className="pill yellow">{a.compact.range}</span>
-                  <span className="pill green">{a.quantity}</span>
-                </div>
-                <div className="compact-ammo-stats">
                   <EditableText
-                    className="compact-stat"
-                    value={a.compact.penetration}
-                    onChange={(v) =>
-                      update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.penetration = v))
-                    }
-                  />
-                  <EditableText
-                    className="compact-stat"
-                    value={a.compact.damage}
-                    onChange={(v) =>
-                      update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.damage = v))
-                    }
-                  />
-                  <EditableText
-                    className="compact-stat"
-                    value={a.compact.range}
-                    onChange={(v) =>
-                      update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.range = v))
-                    }
+                    className="pill green"
+                    value={a.quantity}
+                    onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.quantity = v))}
                   />
                 </div>
+                <EditableText
+                  className={`compact-stat ${a.compact.isHeat ? 'heat' : ''}`}
+                  value={a.compact.penetration}
+                  onChange={(v) =>
+                    update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.penetration = v))
+                  }
+                />
+                <EditableText
+                  className="compact-stat"
+                  value={a.compact.damage}
+                  onChange={(v) =>
+                    update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.damage = v))
+                  }
+                />
+                <EditableText
+                  className="compact-stat"
+                  value={a.compact.accuracy}
+                  onChange={(v) =>
+                    update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.accuracy = v))
+                  }
+                />
               </div>
             ))}
           </div>

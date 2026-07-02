@@ -14,6 +14,13 @@ export interface CardArmor {
   top: ArmorFacing
 }
 
+export interface ArmorLabels {
+  front: string
+  sides: string
+  rear: string
+  top: string
+}
+
 export interface StatLine {
   /** sprite key into the extracted icon set (InfocardConfig mapping) */
   icon: string | null
@@ -36,20 +43,26 @@ export interface AmmoModel {
   icon: string | null
   name: string
   quantity: string
+  /** yellow distance pill, e.g. "1200m" */
+  rangePill: string
   traits: TraitChip[]
   /** label:value lines of the expanded ammo panel (damage model) */
   stats: StatLine[]
-  /** key numbers for the compact row */
+  /** key numbers for the compact row (pen | damage | accuracy columns) */
   compact: {
-    damage: string
     penetration: string
-    range: string
+    damage: string
+    accuracy: string
+    /** HEAT rounds render the penetration value orange */
+    isHeat: boolean
   }
 }
 
 export interface WeaponModel {
   icon: string | null
   name: string
+  /** "x2" badge when identical weapons are merged, '' otherwise */
+  count: string
   typeLabel: string
   traits: TraitChip[]
   stats: StatLine[]
@@ -65,14 +78,18 @@ export interface CardModel {
   flagIcon: string | null
   /** sprite key or data-URL (uploaded portrait) */
   portrait: string | null
-  dlcBadge: string | null
   categoryLabel: string
   roleLabel: string
   description: string
   health: string
   armor: CardArmor | null
+  /** facing-armor overlay over the portrait (ground vehicles only) */
+  armorOverlay: boolean
+  armorLabels: ArmorLabels
   stats: StatLine[]
   abilities: AbilityLine[]
+  /** amphibious / airdroppable chips (bottom-right column with abilities) */
+  tags: AbilityLine[]
   weapons: WeaponModel[]
   /** squad size for infantry, '' otherwise */
   squadSize: string
@@ -93,14 +110,16 @@ export function emptyCard(): CardModel {
     countryId: null,
     flagIcon: null,
     portrait: null,
-    dlcBadge: null,
     categoryLabel: '',
     roleLabel: '',
     description: '',
     health: EMPTY_VALUE,
     armor: emptyArmor(),
+    armorOverlay: true,
+    armorLabels: { front: 'Front', sides: 'Sides', rear: 'Rear', top: 'Top' },
     stats: [],
     abilities: [],
+    tags: [],
     weapons: [],
     squadSize: '',
   }

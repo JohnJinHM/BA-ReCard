@@ -8,10 +8,11 @@ import { exportCardPng } from './export/exportPng'
 import './app.css'
 
 export default function App() {
-  const { db, loadError, card, compact, editMode } = useAppStore()
+  const { db, loadError, card, compact, editMode, lang } = useAppStore()
   const load = useAppStore((s) => s.load)
   const setCompact = useAppStore((s) => s.setCompact)
   const setEditMode = useAppStore((s) => s.setEditMode)
+  const setLang = useAppStore((s) => s.setLang)
   const resetEdits = useAppStore((s) => s.resetEdits)
   const updateCard = useAppStore((s) => s.updateCard)
 
@@ -39,7 +40,16 @@ export default function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <h1 className="app-title">BA ReCard</h1>
+        <div className="app-title-row">
+          <h1 className="app-title">BA ReCard</h1>
+          <button
+            className="lang-toggle"
+            title="UI language (cards always use in-game English)"
+            onClick={() => void setLang(lang === 'eng' ? 'chi' : 'eng')}
+          >
+            {lang === 'eng' ? '中文' : 'EN'}
+          </button>
+        </div>
         <UnitPicker />
       </aside>
 

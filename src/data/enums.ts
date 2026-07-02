@@ -12,14 +12,16 @@ export const UnitType = {
   BallisticMissile: 1024,
 } as const
 
+// NOTE: the native dump lists this enum 1-based, but the shipped database is
+// 0-based (verified: BMP-3 → 2 Vehicles, HIMARS → 3 Support, Su-57 → 6).
 export const UnitCategoryType: Record<number, string> = {
-  1: 'Recon',
-  2: 'Infantry',
-  3: 'Vehicles',
-  4: 'Support',
-  5: 'Logistic',
-  6: 'Helicopters',
-  7: 'Aircrafts',
+  0: 'Recon',
+  1: 'Infantry',
+  2: 'Vehicles',
+  3: 'Support',
+  4: 'Logistic',
+  5: 'Helicopters',
+  6: 'Aircrafts',
 }
 
 export const UnitRole: Record<number, string> = {
@@ -55,39 +57,120 @@ export const UnitRole: Record<number, string> = {
   201: 'Hovercraft',
 }
 
+// Labels use the in-game strings (ui_enum_weapontype_* in localization);
+// the expanded card titles the weapon detail pane with these.
 export const WeaponType: Record<number, string> = {
-  1: 'Rifle',
-  5: 'Assault Rifle',
-  25: 'SMG',
-  26: 'Light MG',
-  27: 'Medium MG',
-  28: 'Heavy MG',
+  1: 'Assault rifle',
+  2: 'Assault rifle',
+  3: 'Marksman rifle',
+  4: 'Sniper rifle',
+  5: 'Assault rifle',
+  25: 'Submachine gun',
+  26: 'Light machine gun',
+  27: 'Medium machine gun',
+  28: 'Heavy machine gun',
   29: 'Minigun',
   40: 'Shotgun',
-  60: 'Grenade Launcher',
-  62: 'RPG (Reloadable)',
-  63: 'RPG (Disposable)',
-  80: 'ATGM',
-  82: 'Cruise Missile',
-  83: 'Ballistic Missile',
-  84: 'Anti-Radar Missile',
-  85: 'MANPAD',
-  86: 'SAM',
-  87: 'A2A Missile (Radar)',
-  88: 'A2A Missile (IR)',
-  89: 'AGM',
-  110: 'Main Gun',
+  60: 'Grenade launcher',
+  62: 'Rocket launcher',
+  63: 'Rocket launcher',
+  80: 'Anti-tank missile',
+  82: 'Cruise missile',
+  83: 'Ballistic missile',
+  84: 'Anti-radiation missile',
+  85: 'Anti-Aircraft missile',
+  86: 'Surface-to-Air missile',
+  87: 'Air-to-Air missile',
+  88: 'Air-to-Air missile',
+  89: 'Air-to-Ground missile',
+  110: 'Main gun',
   111: 'Howitzer',
   112: 'Mortar',
   113: 'MLRS',
-  114: 'Autocannon',
-  115: 'Anti-Air Gun',
-  116: 'Plane Gun',
-  140: 'Rocket Pod',
-  141: 'Gun Pod',
-  160: 'Bomb',
-  161: 'Drag Bomb',
-  162: 'Smart Bomb',
+  114: 'Autocannon/Chain gun',
+  115: 'Anti-aircraft gun',
+  116: 'Plane gun',
+  140: 'Rocket pod',
+  141: 'Gun pod',
+  160: 'Free-fall bomb',
+  161: 'High-drag bomb',
+  162: 'Smart bomb',
+}
+
+// Ammunitions.TrajectoryType → ui_enum_trajectory_* strings.
+export const TrajectoryType: Record<number, string> = {
+  10: 'Direct shot',
+  20: 'Artillery',
+  30: 'Mortar',
+  40: 'MLRS',
+  110: 'Missile',
+  200: 'Cruise missile',
+  300: 'Ballistic missile',
+  400: 'Bomb',
+  410: 'High-drag Bomb',
+}
+
+// ── Localization keys (resolved through GameDb.locOr with the English maps
+//    above as fallback) ─────────────────────────────────────────────────────
+
+export const UnitCategoryLocKey: Record<number, string> = {
+  0: 'ui_arsenal_category_rec',
+  1: 'ui_arsenal_category_inf',
+  2: 'ui_arsenal_category_veh',
+  3: 'ui_arsenal_category_sup',
+  // no arsenal key exists for Logistic in the shipped localization
+  5: 'ui_arsenal_category_hel',
+  6: 'ui_arsenal_category_air',
+}
+
+export const WeaponTypeLocKey: Record<number, string> = {
+  1: 'ui_enum_weapontype_rifle',
+  2: 'ui_enum_weapontype_battle_rifle',
+  3: 'ui_enum_weapontype_marksman_rifle',
+  4: 'ui_enum_weapontype_sniper_rifle',
+  5: 'ui_enum_weapontype_assault_rifle',
+  25: 'ui_enum_weapontype_smg',
+  26: 'ui_enum_weapontype_autorifle',
+  27: 'ui_enum_weapontype_machinegun_light',
+  28: 'ui_enum_weapontype_machinegun_heavy',
+  29: 'ui_enum_weapontype_minigun',
+  40: 'ui_enum_weapontype_shotgun',
+  60: 'ui_enum_weapontype_gl',
+  62: 'ui_enum_weapontype_rpg',
+  63: 'ui_enum_weapontype_rpg',
+  80: 'ui_enum_weapontype_atgm',
+  82: 'ui_enum_weapontype_missile_cruise',
+  83: 'ui_enum_weapontype_missile_ballistic',
+  84: 'ui_enum_weapontype_missile_sead',
+  85: 'ui_enum_weapontype_missile_manpad',
+  86: 'ui_enum_weapontype_missile_sam',
+  87: 'ui_enum_weapontype_missile_a2a_radar',
+  88: 'ui_enum_weapontype_missile_a2a_ir',
+  89: 'ui_enum_weapontype_missile_a2g',
+  110: 'ui_enum_weapontype_main_tankgun',
+  111: 'ui_enum_weapontype_howitzer',
+  112: 'ui_enum_weapontype_mortar',
+  113: 'ui_enum_weapontype_mlrs',
+  114: 'ui_enum_weapontype_autocannon',
+  115: 'ui_enum_weapontype_aa_gun',
+  116: 'ui_enum_weapontype_plane_gun',
+  140: 'ui_enum_weapontype_pod_rockets',
+  141: 'ui_enum_weapontype_pod_gun',
+  160: 'ui_enum_weapontype_bomb',
+  161: 'ui_enum_weapontype_bomb_highdrag',
+  162: 'ui_enum_weapontype_bomb_smart',
+}
+
+export const TrajectoryLocKey: Record<number, string> = {
+  10: 'ui_enum_trajectory_direct',
+  20: 'ui_enum_trajectory_artillery',
+  30: 'ui_enum_trajectory_mortar',
+  40: 'ui_enum_trajectory_mlrs',
+  110: 'ui_enum_trajectory_missile',
+  200: 'ui_enum_trajectory_cruise',
+  300: 'ui_enum_trajectory_ballistic',
+  400: 'ui_enum_trajectory_bomb',
+  410: 'ui_enum_trajectory_bomb_highdrag',
 }
 
 export const ContentMembership: Record<number, string> = {
