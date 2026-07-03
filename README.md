@@ -1,10 +1,13 @@
-# BA-ReCard
+# [BA-ReCard](https://johnjinhm.github.io/BA-ReCard/)
 
-Reconstruct Broken Arrow's **Arsenal unit info cards** (expanded + compact) for
-content creators — render a faithful card from unit data, allow manual edits,
-and export to PNG.
+Reconstruct Broken Arrow's **unit info cards** — render a faithful card from
+unit data, support manual edits and image import, and export to PNG.
 
-Built with **React + TypeScript + Vite**, deployable to GitHub Pages.
+Data source: **[BA-Units](https://github.com/JohnJinHM/BA-Units)**
+
+Built with **React + TypeScript + Vite**, deployed to GitHub Pages.
+
+> 🇨🇳 [中文](README_CN.md)
 
 ## Contents
 
@@ -16,12 +19,12 @@ src/
   ui/          unit picker, variant panel, portrait crop dialog
   export/      DOM → PNG rasterizer (html-to-image, 2× pixel ratio)
 public/
-  data/        game database dump (24 tables + localization, from BA-UnitDump)
+  data/        game database dump (24 tables + localization, from BA-Units)
   assets/      extracted game assets (icons/chrome/weapons/ammo/flags/
                portraits/thumbnails/fonts) — produced by scripts/extract-assets.mjs
 scripts/
   extract-assets.mjs   copies/recompresses card assets from the AssetRipper export
-  dev-screenshot.mjs   Playwright smoke test against the dev server
+  dev-screenshot.mjs   test against the dev server
 docs/
   DATA_SCHEMA.md       the 24 tables and their join map
   INFOCARD_SCHEMA.md   the in-game card controller/prefab → data mapping
@@ -39,13 +42,14 @@ npm run build      # type-check + production build to dist/
 npm run deploy     # build + publish dist/ to the gh-pages branch
 ```
 
-To refresh assets after a game patch, re-run AssetRipper on the game, then:
+To refresh assets, re-run AssetRipper on the game, then:
 
 ```sh
 node scripts/extract-assets.mjs <path-to-ExportedProject>
 ```
 
-To refresh the database, re-run BA-UnitDump and replace `public/data/`.
+To refresh the database, run [BA-Units](https://github.com/JohnJinHM/BA-Units)
+and replace `public/data/`.
 
 ## How it works
 
@@ -55,40 +59,38 @@ To refresh the database, re-run BA-UnitDump and replace `public/data/`.
    (armor/mobility/turret/cost/name overrides — the in-game variant system),
    and emits a plain `CardModel` where every visible value is a string.
 3. `UnitCard` renders the `CardModel` to match the in-game prefab: 408×710,
-   hero portrait bar (name, points, abilities, armor overlay, stat icons) over
-   a two-column weapons area; compact mode swaps in the dense per-weapon rows.
+   hero portrait bar (name, points, abilities, armor, stat icons) over a
+   two-column weapons area; compact mode swaps in the dense per-weapon rows.
 4. **Edit mode** turns every value on the card into a contentEditable span —
    edits mutate the `CardModel` copy, so anything can be overridden (or set
    to `-`).
-5. **Portrait…** uploads an image through a crop dialog fixed to the in-game
+5. **Import image…** uploads an image through a crop dialog fixed to the in-game
    816×550 portrait frame.
 6. **Export PNG** rasterizes the card DOM at 2× with edit outlines hidden.
 
-## Fidelity notes
+## Documentation
 
-- Layout numbers, palette (`#1E1E1E` / `#E7F8E5` / `#F4D42A` / `#F66B06`),
-  and Inter font sizes come from the extracted prefabs
-  (docs/extracted/PREFAB_LAYOUT.md).
-- Icons follow the game's `InfocardConfig` sprite map; ranges, blast radius and
-  dispersion are displayed with its `EffectiveRangeMultiplier` (×2); damage,
-  speeds, optics and weight display raw (calibrated against `/samples`).
-- `Options.Cost` is a delta on base cost; `ReplaceUnitId` swaps the base unit.
-- `Units.CategoryType` is **0-based** in the shipped database (0=Recon …
-  6=Aircrafts) even though the native enum dump reads 1-based.
-- Card labels use the game's own localization keys (`ui_infocard_*`,
-  `ui_enum_*`), so the language toggle (eng/chi) localizes the whole card.
+- [docs/DATA_SCHEMA.md](docs/DATA_SCHEMA.md) — the 24 JSON tables extracted from
+  the game's `DataBaseCompiled.asset` and how they join.
+- [docs/INFOCARD_SCHEMA.md](docs/INFOCARD_SCHEMA.md) — how the in-game
+  `UnitInfoCard` controller and its prefabs map to database fields (expanded vs
+  compact).
+- [docs/extracted/PREFAB_LAYOUT.md](docs/extracted/PREFAB_LAYOUT.md) — card
+  geometry, palette, and fonts extracted from the prefab YAML (408×710 spec).
+- [docs/extracted/ASSETS.md](docs/extracted/ASSETS.md) — the extracted asset
+  catalogue and `InfocardConfig` sprite mapping.
 
 ## Roadmap
 
 - [x] Data loader + join layer over `public/data/tables/`
-- [x] Unit → card view model (apply Options/Modifications for variants)
+- [x] Unit → card view model
 - [x] Expanded card renderer
 - [x] Compact card renderer
-- [x] Manual edit support (all fields editable in place)
-- [x] Portrait upload with crop (816×550)
-- [x] PNG export (2×)
+- [x] Manual edit support
+- [x] Image import with crop (816×550)
+- [x] PNG export
 - [x] Sprite/font asset pipeline from the game export
+- [x] Localization toggle (eng/chi)
 - [ ] Weapon trait rows / ammo panel fine-tuning vs in-game screenshots
 - [ ] Custom card database (save/load edited cards as JSON in localStorage)
 - [ ] Weapon icon replacement in edit mode (upload custom weapon logo)
-- [ ] Localization toggle (eng/chi)
