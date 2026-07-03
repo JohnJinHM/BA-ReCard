@@ -135,14 +135,16 @@ function weaponsForTurretSlots(
       if (w && !w.IsUnderbarrel) weapons.push(w)
     }
   }
-  // Infantry squads carry weapons via SquadWeapons instead of turrets.
+  // Infantry loadouts come from SquadMembers (one weapon entry per carrier,
+  // so mergeWeapons yields correct xN counts). SquadWeapons is a superset
+  // pool that includes weapons no member carries (e.g. Airborne Snipers'
+  // XM7 row) — don't read it directly. Underbarrel launchers (M203) are
+  // shown for infantry, unlike on turrets.
   if (unit.Type === UnitType.Infantry) {
-    const seen = new Set(weapons.map((w) => w.Id))
-    for (const sw of db.squadWeapons.get(unit.Id) ?? []) {
-      const w = db.weapons.get(sw.WeaponId)
-      if (w && !w.IsUnderbarrel && !seen.has(w.Id)) {
-        weapons.push(w)
-        seen.add(w.Id)
+    for (const m of db.squadMembers.get(unit.Id) ?? []) {
+      for (const id of [m.PrimaryWeaponId, m.SpecialWeaponId]) {
+        const w = id ? db.weapons.get(id) : null
+        if (w) weapons.push(w)
       }
     }
   }
