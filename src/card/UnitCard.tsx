@@ -318,8 +318,9 @@ function BottomCompactBar({ card }: { card: CardModel }) {
               value={w.name}
               onChange={(v) => update((c) => void (c.weapons[wi]!.name = v))}
             />
-            {w.count && <span className="weapon-count">{w.count}</span>}
+            {/* icon first so the absolutely-positioned pill paints above it */}
             <Img className="compact-weapon-icon" src={weaponIconUrl(w.icon)} alt={w.name} />
+            {w.count && <span className="weapon-count">{w.count}</span>}
           </div>
           <div className="compact-ammo-col">
             {w.ammo.map((a, ai) => (

@@ -365,8 +365,7 @@ span.hero-portrait { position: absolute; inset: 0; }
 .compact-weapon-name { font-size: 12px; font-weight: 600; color: #fff; }
 /* mirrored, like the in-game silhouettes */
 .compact-weapon-icon { width: 104px; height: 40px; object-fit: contain; transform: scaleX(-1); }
-/* count pill sits at the top of the block, above the silhouette */
-.compact-weapon-left .weapon-count { top: 0; right: 6px; z-index: 1; }
+.compact-weapon-left .weapon-count { top: 18px; right: 2px; }
 
 .compact-ammo-col { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
 /* pills overlap the ammo silhouette, like in game: yellow range pill at the

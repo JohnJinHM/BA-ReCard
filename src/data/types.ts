@@ -128,6 +128,7 @@ export interface WeaponRow {
   HUDIcon: string | null
   IsLowAltDirectWeapon: boolean
   AutoLoaded: boolean
+  CanBeMerged: boolean
   AimTimeMin: number
   AimTimeMax: number
   CanShootOnTheMove: boolean

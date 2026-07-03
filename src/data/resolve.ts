@@ -286,7 +286,9 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout, weaponRows: WeaponRow[]
         : Math.max(mainSensor.OpticsLowAltitude, mainSensor.OpticsHighAltitude)
     push('Optics', L('ui_infocard_optics', 'Optics'), fmtInt(effRange(optics)))
   }
-  push('Stealth', L('ui_infocard_stealth', 'Stealth'), fmt(lo.stealth))
+  // Stealth divides enemy detection range: display 1/value (AH-1W sample:
+  // data 0.8 → shown 1.25)
+  push('Stealth', L('ui_infocard_stealth', 'Stealth'), fmt(lo.stealth > 0 ? 1 / lo.stealth : 0))
   if (mob) {
     push(`Forward speed.${cls}`, L('ui_infocard_speed_forward', 'Forward speed'), fmtInt(mob.MaxSpeedRoad))
     if ((isHel || isAir) && mob.Agility > 0)
@@ -317,9 +319,7 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout, weaponRows: WeaponRow[]
   if (mob?.IsAirDroppable)
     tags.push({ icon: 'airdrop', name: L('ui_infocard_ability_airdropable', 'Airdroppable'), detail: '' })
 
-  const weapons = mergeWeapons(weaponRows).map(({ weapon, count }) =>
-    buildWeaponModel(db, unit, weapon, count),
-  )
+  const weapons = mergeWeapons(weaponRows).map((mw) => buildWeaponModel(db, unit, mw))
 
   return {
     unitId: unit.Id,
@@ -355,13 +355,34 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout, weaponRows: WeaponRow[]
   }
 }
 
-/** Group identical consecutive weapons (e.g. two Hydra pods → "x2"). */
-function mergeWeapons(rows: WeaponRow[]): { weapon: WeaponRow; count: number }[] {
-  const out: { weapon: WeaponRow; count: number }[] = []
+interface MergedWeapon {
+  weapon: WeaponRow
+  /** total mounts across all slots */
+  count: number
+  /** member weapon id → number of mounts (CanBeMerged loadouts may use
+   *  several Weapon rows with the same display identity, e.g. Su-24M2's
+   *  OFAB-100 racks are ids 453/454/455) */
+  members: Map<number, number>
+}
+
+/** Group identical weapons regardless of slot position. `CanBeMerged`
+ *  weapons merge by display identity (HUDName/icon/type) even across
+ *  different Weapon rows; others merge by row id (Su-35S R-77-1 ×4). */
+function mergeWeapons(rows: WeaponRow[]): MergedWeapon[] {
+  const out: MergedWeapon[] = []
+  const byKey = new Map<string, MergedWeapon>()
   for (const w of rows) {
-    const last = out[out.length - 1]
-    if (last && last.weapon.Id === w.Id) last.count++
-    else out.push({ weapon: w, count: 1 })
+    const key = w.CanBeMerged
+      ? `m:${w.HUDName ?? w.Name}|${w.HUDIcon}|${w.Type}`
+      : `id:${w.Id}`
+    let entry = byKey.get(key)
+    if (!entry) {
+      entry = { weapon: w, count: 0, members: new Map() }
+      byKey.set(key, entry)
+      out.push(entry)
+    }
+    entry.count++
+    entry.members.set(w.Id, (entry.members.get(w.Id) ?? 0) + 1)
   }
   return out
 }
@@ -428,15 +449,27 @@ function abilityChips(
   return chips
 }
 
-function buildWeaponModel(
-  db: GameDb,
-  unit: UnitRow,
-  w: WeaponRow,
-  count: number,
-): WeaponModel {
-  const ammoRows = [...(db.unitWeaponAmmo.get(unit.Id) ?? [])]
-    .filter((r) => r.WeaponId === w.Id)
-    .sort((a, b) => a.Order - b.Order)
+function buildWeaponModel(db: GameDb, unit: UnitRow, mw: MergedWeapon): WeaponModel {
+  const { weapon: w, count, members } = mw
+
+  // Collect ammo across all member weapon rows; quantities are per mount, so
+  // scale by mounts and combine rows sharing the same ammunition
+  // (Su-24M2 14+12+12 OFAB-100 → one entry x38).
+  const combined = new Map<number, { order: number; quantity: number }>()
+  for (const r of db.unitWeaponAmmo.get(unit.Id) ?? []) {
+    const mounts = members.get(r.WeaponId)
+    if (!mounts) continue
+    const prev = combined.get(r.AmmunitionId)
+    if (prev) {
+      prev.quantity += r.Quantity * mounts
+      prev.order = Math.min(prev.order, r.Order)
+    } else {
+      combined.set(r.AmmunitionId, { order: r.Order, quantity: r.Quantity * mounts })
+    }
+  }
+  const ammoRows = [...combined.entries()]
+    .map(([ammunitionId, v]) => ({ ammunitionId, ...v }))
+    .sort((a, b) => a.order - b.order)
 
   const traits: TraitChip[] = []
   // The hand icon marks weapons that CANNOT fire on the move (ui_infocard_weapon_static).
@@ -474,11 +507,9 @@ function buildWeaponModel(
     typeLabel: db.cardLocOr(WeaponTypeLocKey[w.Type], WeaponType[w.Type] ?? ''),
     traits,
     stats,
-    // WeaponAmmunitions.Quantity is per weapon; merged mounts ("x2") carry
-    // the total (BMP-3 sample: PKT x3 shows the tripled ammo count).
     ammo: ammoRows.map((r) => {
-      const a = db.ammunitions.get(r.AmmunitionId)
-      return buildAmmoModel(db, a ?? null, r.Quantity * count)
+      const a = db.ammunitions.get(r.ammunitionId)
+      return buildAmmoModel(db, a ?? null, r.quantity)
     }),
   }
 }

@@ -54,5 +54,9 @@ await page.locator('#unit-card-root').screenshot({ path: `${shots}/33-su35-ecm.p
 await pick('knt')
 await page.locator('#unit-card-root').screenshot({ path: `${shots}/34-knt.png` })
 
+// Airborne Snipers (stealth = 1/x) + BMP-3 (compact pill position)
+await pick('airborne snipers')
+await page.locator('#unit-card-root').screenshot({ path: `${shots}/35-snipers.png` })
+
 console.log('console errors:', errors.length ? errors.slice(0, 10) : 'none')
 await browser.close()
