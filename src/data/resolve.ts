@@ -579,7 +579,7 @@ function buildAmmoModel(db: GameDb, a: AmmunitionRow | null, quantity: number): 
       rangePill: EMPTY_VALUE,
       traits: [],
       stats: [],
-      compact: { penetration: EMPTY_VALUE, damage: EMPTY_VALUE, accuracy: EMPTY_VALUE, isHeat: false },
+      compact: { penetration: '0', damage: '0', accuracy: '0', isHeat: false },
     }
   }
   const L = (key: string, fallback: string) => db.cardLocOr(key, fallback)
@@ -645,13 +645,15 @@ function buildAmmoModel(db: GameDb, a: AmmunitionRow | null, quantity: number): 
     traits,
     stats,
     compact: {
-      penetration: a.PenetrationAtMinRange > 0 ? fmtInt(a.PenetrationAtMinRange) : EMPTY_VALUE,
+      // Zero/absent numeric stats show "0" rather than "-" (e.g. SSO's
+      // Flashbang has no penetration or dispersion).
+      penetration: a.PenetrationAtMinRange > 0 ? fmtInt(a.PenetrationAtMinRange) : '0',
       damage: fmt(a.Damage),
       accuracy: a.Seeker
         ? '100%'
         : a.DispersionHorizontalRadius > 0
           ? `${fmt(effRange(a.DispersionHorizontalRadius), 1)}m`
-          : EMPTY_VALUE,
+          : '0',
       isHeat,
     },
   }

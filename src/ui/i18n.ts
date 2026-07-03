@@ -7,7 +7,7 @@ const STRINGS = {
   compact: { eng: 'Compact', chi: '默认' },
   edit: { eng: 'Edit', chi: '编辑' },
   editing: { eng: 'Editing…', chi: '编辑中…' },
-  portrait: { eng: 'Import Portrait', chi: '导入图片…' },
+  portrait: { eng: 'Import...', chi: '导入图片…' },
   reset: { eng: 'Reset', chi: '重置' },
   exportPng: { eng: 'Export PNG', chi: '导出 PNG' },
   exporting: { eng: 'Exporting…', chi: '导出中…' },

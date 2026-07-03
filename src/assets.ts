@@ -8,6 +8,12 @@ function passthrough(name: string): boolean {
   return name.startsWith('data:') || name.startsWith('blob:')
 }
 
+/** True for user-uploaded images (data/blob URLs) vs. game sprite names.
+ *  Callers use this to skip sprite-only styling like the weapon mirror. */
+export function isUploadedImage(name: string | null): boolean {
+  return !!name && passthrough(name)
+}
+
 function enc(name: string): string {
   return encodeURIComponent(name)
 }

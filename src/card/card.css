@@ -43,7 +43,63 @@
 }
 .unit-card.exporting .editable { outline: none; }
 
+/* edit-only affordances (add/remove/pick buttons, placeholders) never appear
+   in the exported PNG */
+.unit-card.exporting .edit-chrome { display: none !important; }
+
 .img-missing { display: inline-block; min-width: 12px; min-height: 12px; }
+
+/* slot editing chrome */
+.slot-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 3;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  line-height: 14px;
+  text-align: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 120, 100, 0.8);
+  background: rgba(30, 10, 10, 0.85);
+  color: #ff9b8b;
+  font-size: 13px;
+  cursor: pointer;
+}
+.slot-remove:hover { background: #b23; color: #fff; }
+
+.weapon-icon-btn {
+  appearance: none;
+  background: none;
+  border: 1px dashed transparent;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.weapon-icon-btn:hover { border-color: rgba(244, 212, 42, 0.7); }
+
+.add-weapon-btn {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--c-text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(231, 248, 229, 0.4);
+  border-radius: 3px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.add-weapon-btn:hover { border-color: var(--c-yellow); color: var(--c-yellow); }
+.add-weapon-btn.list { margin: 8px 6px; }
+.add-weapon-btn.compact { margin: 8px 12px 0; align-self: flex-start; }
+
+/* editable weapon count badge */
+.count-edit { display: inline-flex; align-items: center; }
+.count-num { min-width: 1ch; }
+.count-edit.empty { background: rgba(124, 255, 129, 0.35); }
+/* an unset count is an edit-only affordance — keep it out of the export */
+.unit-card.exporting .count-edit.empty { display: none; }
 
 /* ── Top Info Bar: 274px hero; the stats row overlays its bottom 64px
       (portraits are 816×550 ≈ 408×275, made legible by the bottom gradient) */
@@ -130,6 +186,48 @@ span.hero-portrait { position: absolute; inset: 0; }
 }
 .tag-item { position: relative; width: 30px; height: 30px; }
 .tag-icon { width: 30px; height: 30px; object-fit: contain; }
+
+/* tag-icon slot editing */
+.tag-edit-btn {
+  appearance: none;
+  background: none;
+  border: 1px dashed transparent;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  display: block;
+}
+.tag-edit-btn:hover { border-color: rgba(244, 212, 42, 0.7); }
+.tag-edit-hint {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  font-size: 9px;
+  line-height: 1;
+  padding: 1px 2px;
+  color: var(--c-yellow);
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: 2px;
+}
+.tag-placeholder {
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(231, 248, 229, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(231, 248, 229, 0.7);
+  border-radius: 4px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tag-placeholder:hover { border-color: var(--c-yellow); color: var(--c-yellow); }
 .tag-pill {
   position: absolute;
   left: 50%;
@@ -230,6 +328,7 @@ span.hero-portrait { position: absolute; inset: 0; }
   flex-direction: column;
   overflow-y: auto;
 }
+.weapon-list-item { position: relative; }
 .weapon-list-btn {
   appearance: none;
   background: none;
@@ -248,8 +347,10 @@ span.hero-portrait { position: absolute; inset: 0; }
 }
 .weapon-list-btn:hover { background: rgba(255, 255, 255, 0.1); }
 .weapon-list-btn.active { background: rgba(255, 255, 255, 0.2); }
-/* weapon silhouettes face right in the assets; the game shows them mirrored */
+/* weapon silhouettes face right in the assets; the game shows them mirrored.
+   uploaded images (.no-flip) are custom art and render as-is */
 .weapon-list-icon { width: 72px; height: 28px; object-fit: contain; transform: scaleX(-1); }
+.weapon-list-icon.no-flip { transform: none; }
 .weapon-list-name { text-align: center; line-height: 1.2; }
 .weapon-count {
   position: absolute;
@@ -363,8 +464,9 @@ span.hero-portrait { position: absolute; inset: 0; }
   gap: 2px;
 }
 .compact-weapon-name { font-size: 12px; font-weight: 600; color: #fff; }
-/* mirrored, like the in-game silhouettes */
+/* mirrored, like the in-game silhouettes; uploaded art renders as-is */
 .compact-weapon-icon { width: 104px; height: 40px; object-fit: contain; transform: scaleX(-1); }
+.compact-weapon-icon.no-flip { transform: none; }
 .compact-weapon-left .weapon-count { top: 18px; right: 2px; }
 
 .compact-ammo-col { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }

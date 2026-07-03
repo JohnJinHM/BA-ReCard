@@ -22,9 +22,6 @@ public/
   data/        game database dump (24 tables + localization, from BA-Units)
   assets/      extracted game assets (icons/chrome/weapons/ammo/flags/
                portraits/thumbnails/fonts) — produced by scripts/extract-assets.mjs
-scripts/
-  extract-assets.mjs   copies/recompresses card assets from the AssetRipper export
-  dev-screenshot.mjs   test against the dev server
 docs/
   DATA_SCHEMA.md       the 24 tables and their join map
   INFOCARD_SCHEMA.md   the in-game card controller/prefab → data mapping
@@ -91,6 +88,9 @@ and replace `public/data/`.
 - [x] PNG export
 - [x] Sprite/font asset pipeline from the game export
 - [x] Localization toggle (eng/chi)
+- [x] Customizable weapon slots (add/remove, edit counts)
+- [x] Weapon slot fill: pick a weapon from the database (icon + name + type) or
+      upload a custom icon
+- [x] Tag-icon slots (4): pick from the icon library or upload
 - [ ] Weapon trait rows / ammo panel fine-tuning vs in-game screenshots
 - [ ] Custom card database (save/load edited cards as JSON in localStorage)
-- [ ] Weapon icon replacement in edit mode (upload custom weapon logo)

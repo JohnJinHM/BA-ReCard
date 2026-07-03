@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 import type { CardModel, WeaponModel } from './model'
+import { emptyWeapon, emptyTag } from './model'
 import { EditableText } from './EditableText'
-import { ammoIconUrl, chromeUrl, iconUrl, portraitUrl, weaponIconUrl } from '../assets'
+import { ammoIconUrl, chromeUrl, iconUrl, isUploadedImage, portraitUrl, weaponIconUrl } from '../assets'
 import { useAppStore } from '../state/store'
+import { WeaponType, WeaponTypeLocKey } from '../data/enums'
+import { PickerDialog, type PickerItem } from '../ui/PickerDialog'
+import { TAG_ICON_NAMES, prettyIconName } from '../ui/iconLibrary'
 import './card.css'
 
 // Layout mirrors the game's "Unit Info Card" prefab: 408x710, top hero bar
@@ -54,49 +58,248 @@ function TintIcon({ src, color, className, title }: {
   )
 }
 
+// ── Slot-editing plumbing (add/remove/pick), shared across the card ─────────
+// Number of customizable tag-icon slots in the portrait's right column.
+const TAG_SLOTS = 4
+
+interface SlotCtx {
+  openWeaponPicker(index: number): void
+  openTagPicker(index: number): void
+  addWeapon(): void
+  removeWeapon(index: number): void
+}
+const SlotContext = createContext<SlotCtx | null>(null)
+const useSlots = () => useContext(SlotContext)!
+
+/** Weapon count badge; editable (number only) in edit mode. */
+function WeaponCount({ value, onChange }: { value: string; onChange(v: string): void }) {
+  const editMode = useAppStore((s) => s.editMode)
+  if (!editMode) return value ? <span className="weapon-count">{value}</span> : null
+  const num = value.replace(/\D/g, '')
+  return (
+    <span className={`weapon-count count-edit ${num ? '' : 'empty'}`}>
+      x
+      <EditableText
+        className="count-num"
+        value={num}
+        onChange={(v) => {
+          const n = parseInt(v.replace(/\D/g, ''), 10)
+          onChange(Number.isFinite(n) && n > 1 ? `x${n}` : '')
+        }}
+      />
+    </span>
+  )
+}
+
+/** Small "×" button to remove a slot (edit mode only). */
+function RemoveBtn({ onClick, className }: { onClick(): void; className?: string }) {
+  return (
+    <button
+      className={`slot-remove edit-chrome ${className ?? ''}`}
+      title="Remove"
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
+    >
+      ×
+    </button>
+  )
+}
+
 export function UnitCard({ card }: { card: CardModel }) {
   const compact = useAppStore((s) => s.compact)
+  const editMode = useAppStore((s) => s.editMode)
   const db = useAppStore((s) => s.db)
+  const update = useAppStore((s) => s.updateCard)
   const [selectedWeapon, setSelectedWeapon] = useState(0)
   const weaponIdx = Math.min(selectedWeapon, card.weapons.length - 1)
   const weapon = card.weapons[weaponIdx] ?? null
 
+  // picker target: which slot the picker dialog is filling
+  const [picker, setPicker] = useState<
+    { kind: 'weapon'; index: number } | { kind: 'tag'; index: number } | null
+  >(null)
+
+  const weaponItems = useMemo<PickerItem[]>(() => {
+    if (!db) return []
+    const seen = new Set<string>()
+    const items: PickerItem[] = []
+    for (const w of db.tables.Weapons) {
+      const key = `${w.HUDIcon}|${w.HUDName}|${w.Type}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      items.push({
+        key: String(w.Id),
+        label: db.cardLoc(w.HUDName) || w.Name || w.HUDIcon || `Weapon ${w.Id}`,
+        url: weaponIconUrl(w.HUDIcon),
+      })
+    }
+    return items.sort((a, b) => a.label.localeCompare(b.label))
+  }, [db])
+
+  const tagItems = useMemo<PickerItem[]>(
+    () => TAG_ICON_NAMES.map((n) => ({ key: n, label: prettyIconName(n), url: iconUrl(n) })),
+    [],
+  )
+
+  const slots: SlotCtx = {
+    openWeaponPicker: (index) => setPicker({ kind: 'weapon', index }),
+    openTagPicker: (index) => setPicker({ kind: 'tag', index }),
+    addWeapon: () => update((c) => void c.weapons.push(emptyWeapon())),
+    removeWeapon: (index) => update((c) => void c.weapons.splice(index, 1)),
+  }
+
+  function pickWeapon(weaponId: string) {
+    if (picker?.kind !== 'weapon' || !db) return
+    const w = db.weapons.get(Number(weaponId))
+    const index = picker.index
+    if (w)
+      update((c) => {
+        const slot = c.weapons[index]
+        if (!slot) return
+        slot.icon = w.HUDIcon
+        slot.name = db.cardLoc(w.HUDName) || w.Name || slot.name
+        slot.typeLabel = db.cardLocOr(WeaponTypeLocKey[w.Type], WeaponType[w.Type] ?? slot.typeLabel)
+      })
+    setPicker(null)
+  }
+
+  function uploadWeapon(dataUrl: string) {
+    if (picker?.kind !== 'weapon') return
+    const index = picker.index
+    update((c) => void (c.weapons[index] && (c.weapons[index]!.icon = dataUrl)))
+    setPicker(null)
+  }
+
+  function setTag(index: number, icon: string | null, name: string) {
+    update((c) => {
+      while (c.tags.length < TAG_SLOTS) c.tags.push(emptyTag())
+      c.tags[index] = { icon, name, detail: c.tags[index]?.detail ?? '' }
+      // drop trailing empties so view mode / export stay clean
+      while (c.tags.length && !c.tags[c.tags.length - 1]!.icon) c.tags.pop()
+    })
+  }
+
   return (
-    <div className="unit-card" id="unit-card-root">
-      <TopInfoBar card={card} />
-      <div className="h-divider" />
-      {card.weapons.length === 0 ? (
-        <div className="bottom-empty-bar">
-          {db?.cardLocOr('ui_infocard_no_weapons', 'Unit has no weapons') ?? 'Unit has no weapons'}
-        </div>
-      ) : compact ? (
-        <BottomCompactBar card={card} />
-      ) : (
-        <div className="bottom-info-bar">
-          <div className="weapon-list">
-            {card.weapons.map((w, i) => (
-              <button
-                key={i}
-                className={`weapon-list-btn ${i === weaponIdx ? 'active' : ''}`}
-                onClick={() => setSelectedWeapon(i)}
-                title={w.name}
-              >
-                {w.count && <span className="weapon-count">{w.count}</span>}
-                <Img className="weapon-list-icon" src={weaponIconUrl(w.icon)} alt={w.name} />
-                <span className="weapon-list-name">{w.name}</span>
+    <SlotContext.Provider value={slots}>
+      <div className="unit-card" id="unit-card-root">
+        <TopInfoBar card={card} />
+        <div className="h-divider" />
+        {card.weapons.length === 0 ? (
+          editMode ? (
+            <div className="bottom-empty-bar">
+              <button className="add-weapon-btn edit-chrome" onClick={slots.addWeapon}>
+                + Add weapon
               </button>
-            ))}
+            </div>
+          ) : (
+            <div className="bottom-empty-bar">
+              {db?.cardLocOr('ui_infocard_no_weapons', 'Unit has no weapons') ?? 'Unit has no weapons'}
+            </div>
+          )
+        ) : compact ? (
+          <BottomCompactBar card={card} />
+        ) : (
+          <div className="bottom-info-bar">
+            <div className="weapon-list">
+              {card.weapons.map((w, i) => (
+                <div className="weapon-list-item" key={i}>
+                  <div
+                    className={`weapon-list-btn ${i === weaponIdx ? 'active' : ''}`}
+                    role="button"
+                    onClick={() => setSelectedWeapon(i)}
+                  >
+                    <WeaponCount
+                      value={w.count}
+                      onChange={(v) => update((c) => void (c.weapons[i]!.count = v))}
+                    />
+                    {editMode ? (
+                      <button
+                        className="weapon-icon-btn edit-chrome"
+                        title="Change weapon / icon"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          slots.openWeaponPicker(i)
+                        }}
+                      >
+                        <Img
+                          className={`weapon-list-icon ${isUploadedImage(w.icon) ? 'no-flip' : ''}`}
+                          src={weaponIconUrl(w.icon)}
+                          alt={w.name}
+                        />
+                      </button>
+                    ) : (
+                      <Img
+                        className={`weapon-list-icon ${isUploadedImage(w.icon) ? 'no-flip' : ''}`}
+                        src={weaponIconUrl(w.icon)}
+                        alt={w.name}
+                      />
+                    )}
+                    <EditableText
+                      className="weapon-list-name"
+                      value={w.name}
+                      onChange={(v) => update((c) => void (c.weapons[i]!.name = v))}
+                    />
+                  </div>
+                  {editMode && <RemoveBtn onClick={() => slots.removeWeapon(i)} />}
+                </div>
+              ))}
+              {editMode && (
+                <button className="add-weapon-btn list edit-chrome" onClick={slots.addWeapon}>
+                  + Add
+                </button>
+              )}
+            </div>
+            <div className="v-divider" />
+            {weapon && <WeaponDetail weapon={weapon} index={weaponIdx} />}
           </div>
-          <div className="v-divider" />
-          {weapon && <WeaponDetail weapon={weapon} index={weaponIdx} />}
-        </div>
+        )}
+      </div>
+
+      {picker?.kind === 'weapon' && (
+        <PickerDialog
+          title="Select weapon"
+          items={weaponItems}
+          iconClassName="mirror"
+          onPick={pickWeapon}
+          onUpload={uploadWeapon}
+          onCancel={() => setPicker(null)}
+        />
       )}
-    </div>
+      {picker?.kind === 'tag' && (
+        <PickerDialog
+          title="Select tag icon"
+          items={tagItems}
+          onPick={(key) => {
+            setTag(picker.index, key, prettyIconName(key))
+            setPicker(null)
+          }}
+          onUpload={(dataUrl) => {
+            setTag(picker.index, dataUrl, 'Custom tag')
+            setPicker(null)
+          }}
+          onClear={() => {
+            setTag(picker.index, null, '')
+            setPicker(null)
+          }}
+          onCancel={() => setPicker(null)}
+        />
+      )}
+    </SlotContext.Provider>
   )
 }
 
 function TopInfoBar({ card }: { card: CardModel }) {
   const update = useAppStore((s) => s.updateCard)
+  const editMode = useAppStore((s) => s.editMode)
+  const slots = useSlots()
+  // The right column holds at most TAG_SLOTS icons total; resolved abilities
+  // take priority and the editable tag slots fill only the room that remains.
+  const abilities = card.abilities
+  const tagCapacity = Math.max(0, TAG_SLOTS - abilities.length)
+  const shownTags = card.tags.filter((t) => t.icon).slice(0, tagCapacity)
+  const showTagsCol = abilities.length > 0 || shownTags.length > 0 || (editMode && tagCapacity > 0)
   return (
     <div className="top-info-bar">
       <div className="hero">
@@ -140,14 +343,41 @@ function TopInfoBar({ card }: { card: CardModel }) {
         {card.armorOverlay && card.armor && <ArmorOverlay card={card} />}
 
         <div className="right-strip-divider" />
-        {(card.abilities.length > 0 || card.tags.length > 0) && (
+        {showTagsCol && (
           <div className="tags-col">
-            {card.tags.map((t, i) => (
-              <span className="tag-item" key={`t${i}`} title={t.name}>
-                <Img className="tag-icon" src={iconUrl(t.icon)} alt={t.name} />
-              </span>
-            ))}
-            {card.abilities.map((a, i) => (
+            {editMode
+              ? Array.from({ length: tagCapacity }, (_, i) => {
+                  const t = card.tags[i]
+                  if (t?.icon)
+                    return (
+                      <span className="tag-item" key={`t${i}`} title={t.name}>
+                        <button
+                          className="tag-edit-btn"
+                          title="Change or clear tag icon"
+                          onClick={() => slots.openTagPicker(i)}
+                        >
+                          <Img className="tag-icon" src={iconUrl(t.icon)} alt={t.name} />
+                          <span className="tag-edit-hint edit-chrome">✎</span>
+                        </button>
+                      </span>
+                    )
+                  return (
+                    <button
+                      className="tag-item tag-placeholder edit-chrome"
+                      key={`t${i}`}
+                      title="Add tag icon"
+                      onClick={() => slots.openTagPicker(i)}
+                    >
+                      +
+                    </button>
+                  )
+                })
+              : shownTags.map((t, i) => (
+                  <span className="tag-item" key={`t${i}`} title={t.name}>
+                    <Img className="tag-icon" src={iconUrl(t.icon)} alt={t.name} />
+                  </span>
+                ))}
+            {abilities.map((a, i) => (
               <span className="tag-item" key={`a${i}`} title={a.name}>
                 <Img className="tag-icon" src={iconUrl(a.icon)} alt={a.name} />
                 {a.detail && <span className="tag-pill">{a.detail}</span>}
@@ -302,6 +532,8 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
 
 function BottomCompactBar({ card }: { card: CardModel }) {
   const update = useAppStore((s) => s.updateCard)
+  const editMode = useAppStore((s) => s.editMode)
+  const slots = useSlots()
   return (
     <div className="bottom-compact-bar">
       <div className="compact-grid compact-header">
@@ -313,14 +545,33 @@ function BottomCompactBar({ card }: { card: CardModel }) {
       {card.weapons.map((w, wi) => (
         <div className="compact-weapon" key={wi}>
           <div className="compact-weapon-left">
+            {editMode && <RemoveBtn className="compact-remove" onClick={() => slots.removeWeapon(wi)} />}
             <EditableText
               className="compact-weapon-name"
               value={w.name}
               onChange={(v) => update((c) => void (c.weapons[wi]!.name = v))}
             />
             {/* icon first so the absolutely-positioned pill paints above it */}
-            <Img className="compact-weapon-icon" src={weaponIconUrl(w.icon)} alt={w.name} />
-            {w.count && <span className="weapon-count">{w.count}</span>}
+            {editMode ? (
+              <button
+                className="weapon-icon-btn edit-chrome"
+                title="Change weapon / icon"
+                onClick={() => slots.openWeaponPicker(wi)}
+              >
+                <Img
+                  className={`compact-weapon-icon ${isUploadedImage(w.icon) ? 'no-flip' : ''}`}
+                  src={weaponIconUrl(w.icon)}
+                  alt={w.name}
+                />
+              </button>
+            ) : (
+              <Img
+                className={`compact-weapon-icon ${isUploadedImage(w.icon) ? 'no-flip' : ''}`}
+                src={weaponIconUrl(w.icon)}
+                alt={w.name}
+              />
+            )}
+            <WeaponCount value={w.count} onChange={(v) => update((c) => void (c.weapons[wi]!.count = v))} />
           </div>
           <div className="compact-ammo-col">
             {w.ammo.map((a, ai) => (
@@ -364,6 +615,11 @@ function BottomCompactBar({ card }: { card: CardModel }) {
           </div>
         </div>
       ))}
+      {editMode && (
+        <button className="add-weapon-btn compact edit-chrome" onClick={slots.addWeapon}>
+          + Add weapon
+        </button>
+      )}
     </div>
   )
 }

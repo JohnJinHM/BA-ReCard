@@ -22,9 +22,6 @@ public/
   data/        游戏数据库导出（24 张表 + 本地化，来自 BA-Units）
   assets/      提取的游戏素材（图标/边框/武器/弹药/旗帜/
                头像/缩略图/字体）——由 scripts/extract-assets.mjs 生成
-scripts/
-  extract-assets.mjs   从 AssetRipper 导出中复制/重压缩卡片素材
-  dev-screenshot.mjs   针对开发服务器的测试
 docs/
   DATA_SCHEMA.md       24 张表及其关联图
   INFOCARD_SCHEMA.md   游戏内卡片控制器/预制体 → 数据的映射

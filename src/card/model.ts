@@ -97,6 +97,22 @@ export interface CardModel {
 
 export const EMPTY_VALUE = '-'
 
+export function emptyWeapon(): WeaponModel {
+  return {
+    icon: null,
+    name: 'Weapon',
+    count: '',
+    typeLabel: '',
+    traits: [],
+    stats: [],
+    ammo: [],
+  }
+}
+
+export function emptyTag(): AbilityLine {
+  return { icon: null, name: '', detail: '' }
+}
+
 export function emptyArmor(): CardArmor {
   const f = (): ArmorFacing => ({ kinetic: EMPTY_VALUE, heat: EMPTY_VALUE })
   return { front: f(), sides: f(), rear: f(), top: f() }

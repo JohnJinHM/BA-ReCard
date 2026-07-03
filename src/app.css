@@ -207,3 +207,79 @@ body {
   font-family: inherit;
 }
 .crop-controls button.primary { background: #e8b23a; border-color: #e8b23a; color: #14181c; font-weight: 600; }
+
+/* icon / weapon picker dialog */
+.picker-dialog {
+  background: #171c22;
+  border: 1px solid #2a323c;
+  border-radius: 4px;
+  width: 640px;
+  max-width: 92vw;
+  max-height: 86vh;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.picker-dialog-head { display: flex; align-items: center; justify-content: space-between; }
+.picker-dialog-head h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #e8b23a;
+}
+.picker-dialog-close {
+  background: none;
+  border: none;
+  color: #8b98a5;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.picker-dialog-close:hover { color: #fff; }
+.picker-dialog-grid {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+  align-content: start;
+}
+.picker-icon-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  background: #10151a;
+  border: 1px solid #2a323c;
+  border-radius: 3px;
+  color: #d7dee6;
+  font-family: inherit;
+  cursor: pointer;
+}
+.picker-icon-cell:hover { border-color: #e8b23a; }
+.picker-icon-img {
+  width: 72px;
+  height: 40px;
+  object-fit: contain;
+}
+.picker-icon-img.mirror { transform: scaleX(-1); }
+.picker-icon-label {
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  word-break: break-word;
+}
+.picker-empty { color: #56637a; padding: 20px; grid-column: 1 / -1; text-align: center; }
+.picker-dialog-actions { display: flex; align-items: center; gap: 8px; }
+.picker-dialog-actions button {
+  background: #10151a;
+  border: 1px solid #2a323c;
+  color: inherit;
+  padding: 6px 14px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.picker-dialog-actions button:hover { border-color: #56637a; }
