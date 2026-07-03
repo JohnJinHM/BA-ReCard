@@ -106,7 +106,7 @@ span.hero-portrait { position: absolute; inset: 0; }
 /* right strip: abilities + amphibious/airdrop tags, bottom-right */
 .right-strip-divider {
   position: absolute;
-  right: 62px;
+  right: 50px;
   top: 48px;
   bottom: 64px;
   width: 1px;
@@ -120,16 +120,16 @@ span.hero-portrait { position: absolute; inset: 0; }
 }
 .tags-col {
   position: absolute;
-  right: 8px;
+  right: 7px;
   bottom: 74px; /* above the stats overlay */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   padding-bottom: 8px; /* room for the pill hanging under the last icon */
 }
-.tag-item { position: relative; width: 34px; height: 34px; }
-.tag-icon { width: 34px; height: 34px; object-fit: contain; }
+.tag-item { position: relative; width: 30px; height: 30px; }
+.tag-icon { width: 30px; height: 30px; object-fit: contain; }
 .tag-pill {
   position: absolute;
   left: 50%;
@@ -365,7 +365,8 @@ span.hero-portrait { position: absolute; inset: 0; }
 .compact-weapon-name { font-size: 12px; font-weight: 600; color: #fff; }
 /* mirrored, like the in-game silhouettes */
 .compact-weapon-icon { width: 104px; height: 40px; object-fit: contain; transform: scaleX(-1); }
-.compact-weapon-left .weapon-count { top: 18px; right: 2px; }
+/* count pill sits at the top of the block, above the silhouette */
+.compact-weapon-left .weapon-count { top: 0; right: 6px; z-index: 1; }
 
 .compact-ammo-col { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
 /* pills overlap the ammo silhouette, like in game: yellow range pill at the

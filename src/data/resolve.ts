@@ -68,7 +68,9 @@ interface ResolvedLoadout {
   mobility: MobilityRow | null
   sensors: SensorRow[]
   abilities: AbilityRow[]
-  weapons: WeaponRow[]
+  /** turret slot index → turret id; options override slots cumulatively
+   *  (e.g. Tu-22M3: Bay→T5/T6, Fuselage→T3/T4, Wings→T1/T2) */
+  slots: Map<number, number>
   stealth: number
   portraitFile: string | null
 }
@@ -100,7 +102,7 @@ function resolveBase(db: GameDb, unit: UnitRow): ResolvedLoadout {
     mobility: pickDefault(mobilities),
     sensors,
     abilities,
-    weapons: weaponsForTurretSlots(db, unit, turretSlotsOf(db, unit)),
+    slots: turretSlotsOf(db, unit),
     stealth: unit.Stealth,
     portraitFile: unit.PortraitFileName,
   }
@@ -186,23 +188,17 @@ function applyOption(db: GameDb, loadout: ResolvedLoadout, opt: OptionRow): Reso
     out.abilities = merged
   }
 
-  // Turret slot overrides
-  let turretChanged = false
-  const slotTurrets = new Map<number, number>()
+  // Turret slot overrides accumulate across the option chain — each option
+  // only touches its own slots (wings/fuselage/bay pylons etc).
+  let slots: Map<number, number> | null = null
   for (let slot = 0; slot <= 20; slot++) {
     const id = (opt as unknown as Record<string, number | undefined>)[`Turret${slot}Id`]
     if (id) {
-      slotTurrets.set(slot, id)
-      turretChanged = true
+      if (!slots) slots = new Map(loadout.slots)
+      slots.set(slot, id)
     }
   }
-  if (turretChanged) {
-    const baseSlots = turretSlotsOf(db, loadout.unit)
-    for (const [slot, tid] of baseSlots) {
-      if (!slotTurrets.has(slot)) slotTurrets.set(slot, tid)
-    }
-    out.weapons = weaponsForTurretSlots(db, loadout.unit, slotTurrets)
-  }
+  if (slots) out.slots = slots
   return out
 }
 
@@ -236,10 +232,10 @@ export function resolveCard(
   let loadout = resolveBase(db, unit)
   for (const opt of chosen) loadout = applyOption(db, loadout, opt)
 
-  return buildCardModel(db, loadout)
+  return buildCardModel(db, loadout, weaponsForTurretSlots(db, unit, loadout.slots))
 }
 
-function buildCardModel(db: GameDb, lo: ResolvedLoadout): CardModel {
+function buildCardModel(db: GameDb, lo: ResolvedLoadout, weaponRows: WeaponRow[]): CardModel {
   const { unit } = lo
   const country = db.countries.get(unit.CountryId)
   const armor = lo.armor
@@ -303,9 +299,15 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout): CardModel {
   // One Ability row can carry several features (e.g. "Sprint Smoke",
   // "ECM Plane 20" = decoys + ECM) — the game renders one chip per feature.
   // Rows with no displayable feature ("Empty ability") produce no chips.
-  const abilities: AbilityLine[] = lo.abilities.flatMap((a) =>
-    abilityChips(db, a, isHel, isAir),
-  )
+  // One chip per feature KIND: a variant-added ability (e.g. ECM pods)
+  // updates the existing chip's value instead of adding a second icon.
+  const chipsByKind = new Map<string, AbilityLine>()
+  for (const a of lo.abilities)
+    for (const [kind, chip] of abilityChips(db, a, isHel, isAir)) chipsByKind.set(kind, chip)
+  // laser designation always renders at the bottom of the column
+  const abilities: AbilityLine[] = [...chipsByKind.entries()]
+    .sort(([a], [b]) => Number(a === 'laser') - Number(b === 'laser'))
+    .map(([, chip]) => chip)
 
   // Amphibious / airdroppable chips live with the abilities in the
   // bottom-right column of the portrait, not in the stats strip.
@@ -315,7 +317,7 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout): CardModel {
   if (mob?.IsAirDroppable)
     tags.push({ icon: 'airdrop', name: L('ui_infocard_ability_airdropable', 'Airdroppable'), detail: '' })
 
-  const weapons = mergeWeapons(lo.weapons).map(({ weapon, count }) =>
+  const weapons = mergeWeapons(weaponRows).map(({ weapon, count }) =>
     buildWeaponModel(db, unit, weapon, count),
   )
 
@@ -364,45 +366,65 @@ function mergeWeapons(rows: WeaponRow[]): { weapon: WeaponRow; count: number }[]
   return out
 }
 
-// One chip per ability feature; icon names follow InfocardConfig's sprite
-// mapping (docs/extracted/ASSETS.md).
-function abilityChips(db: GameDb, a: AbilityRow, isHel: boolean, isAir: boolean): AbilityLine[] {
-  const chips: AbilityLine[] = []
+// [kind, chip] per ability feature; icon names follow InfocardConfig's sprite
+// mapping (docs/extracted/ASSETS.md). Kinds dedupe variant-updated features.
+function abilityChips(
+  db: GameDb,
+  a: AbilityRow,
+  isHel: boolean,
+  isAir: boolean,
+): [string, AbilityLine][] {
+  const chips: [string, AbilityLine][] = []
   if (a.IsRadar)
-    chips.push({ icon: 'Ability_Radar', name: db.cardLocOr('ui_infocard_ability_radar', 'Radar'), detail: '' })
+    chips.push(['radar', { icon: 'Ability_Radar', name: db.cardLocOr('ui_infocard_ability_radar', 'Radar'), detail: '' }])
   if (a.IsLaserDesignator)
-    chips.push({
-      icon: 'Laser designation',
-      name: db.cardLocOr('ui_infocard_ability_laser', 'Laser designation'),
-      detail: '',
-    })
+    chips.push([
+      'laser',
+      {
+        icon: 'Laser designation',
+        name: db.cardLocOr('ui_infocard_ability_laser', 'Laser designation'),
+        detail: '',
+      },
+    ])
   if (a.IsInfantrySprint)
-    chips.push({ icon: 'Sprint', name: db.cardLocOr('ui_infocard_ability_sprint', 'Sprint'), detail: '' })
+    chips.push(['sprint', { icon: 'Sprint', name: db.cardLocOr('ui_infocard_ability_sprint', 'Sprint'), detail: '' }])
   if (a.IsSmoke)
-    chips.push({
-      icon: 'Smoke screen',
-      name: db.cardLocOr('ui_infocard_ability_smoke', 'Smoke grenades'),
-      detail: a.SmokeAmmunitionQuantity ? `x${a.SmokeAmmunitionQuantity}` : '',
-    })
+    chips.push([
+      'smoke',
+      {
+        icon: 'Smoke screen',
+        name: db.cardLocOr('ui_infocard_ability_smoke', 'Smoke grenades'),
+        detail: a.SmokeAmmunitionQuantity ? `x${a.SmokeAmmunitionQuantity}` : '',
+      },
+    ])
   if (a.IsAPS)
-    chips.push({
-      icon: 'APS',
-      name: db.cardLocOr('ui_infocard_ability_aps', 'Active protection system'),
-      detail: a.APSQuantity ? `x${a.APSQuantity}` : '',
-    })
+    chips.push([
+      'aps',
+      {
+        icon: 'APS',
+        name: db.cardLocOr('ui_infocard_ability_aps', 'Active protection system'),
+        detail: a.APSQuantity ? `x${a.APSQuantity}` : '',
+      },
+    ])
   if (a.IsDecoy)
-    chips.push({
-      icon: isAir ? 'Countermeasures.air' : isHel ? 'Countermeasures.hel' : 'Countermeasures',
-      name: db.cardLocOr('ui_infocard_ability_decoys', 'Decoy flares'),
-      detail: a.DecoyQuantity ? `x${a.DecoyQuantity}` : '',
-    })
+    chips.push([
+      'decoy',
+      {
+        icon: isAir ? 'Countermeasures.air' : isHel ? 'Countermeasures.hel' : 'Countermeasures',
+        name: db.cardLocOr('ui_infocard_ability_decoys', 'Decoy flares'),
+        detail: a.DecoyQuantity ? `x${a.DecoyQuantity}` : '',
+      },
+    ])
   if (a.ECMAccuracyMultiplier !== 1 && a.ECMAccuracyMultiplier !== 0)
-    chips.push({
-      icon: 'ECM',
-      name: db.cardLocOr('ui_infocard_ability_ecm', 'Electronic countermeasures'),
-      // displayed as accuracy REDUCTION: multiplier 0.7 → "30%"
-      detail: `${Math.round((1 - a.ECMAccuracyMultiplier) * 100)}%`,
-    })
+    chips.push([
+      'ecm',
+      {
+        icon: 'ECM',
+        name: db.cardLocOr('ui_infocard_ability_ecm', 'Electronic countermeasures'),
+        // displayed as accuracy REDUCTION: multiplier 0.7 → "30%"
+        detail: `${Math.round((1 - a.ECMAccuracyMultiplier) * 100)}%`,
+      },
+    ])
   return chips
 }
 

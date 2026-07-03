@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { CardModel, WeaponModel } from './model'
 import { EditableText } from './EditableText'
-import { ammoIconUrl, chromeUrl, flagUrl, iconUrl, portraitUrl, weaponIconUrl } from '../assets'
+import { ammoIconUrl, chromeUrl, iconUrl, portraitUrl, weaponIconUrl } from '../assets'
 import { useAppStore } from '../state/store'
 import './card.css'
 
@@ -15,10 +15,13 @@ function Img({ src, className, alt, style }: {
   alt?: string
   style?: React.CSSProperties
 }) {
-  const [failed, setFailed] = useState(false)
-  if (!src || failed) return <span className={`${className ?? ''} img-missing`} title={alt} />
+  // track WHICH src failed — components are reused across unit switches
+  // (index keys), so a sticky boolean would blank icons of the next unit
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  if (!src || failedSrc === src)
+    return <span className={`${className ?? ''} img-missing`} title={alt} />
   return (
-    <img src={src} className={className} alt={alt ?? ''} style={style} onError={() => setFailed(true)} />
+    <img src={src} className={className} alt={alt ?? ''} style={style} onError={() => setFailedSrc(src)} />
   )
 }
 
