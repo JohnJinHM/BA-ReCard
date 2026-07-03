@@ -108,13 +108,52 @@ function resolveBase(db: GameDb, unit: UnitRow): ResolvedLoadout {
   }
 }
 
+/** Base slots for turrets that always render, keyed below any option slot
+ *  index so they sort first. */
+const BASE_SLOT = -1000
+
 function turretSlotsOf(db: GameDb, unit: UnitRow): Map<number, number> {
+  // TurretUnits is a pool, not a layout (Order is 0 on 95% of rows); the
+  // slot indices live in the Options' TurretNId fields. Each option slot
+  // seeds its IsDefault candidate, and the chosen option overrides only the
+  // slots it names (BTR-MDM's "Nothing" option clears slot 2 but keeps the
+  // default PKT turrets it never mentions). Seeding a turret both here and
+  // via its option slot is what duplicated AAVP's MICLIC.
+  const slotCandidates = new Map<number, number[]>()
+  for (const mod of db.unitModifications.get(unit.Id) ?? [])
+    for (const opt of db.modificationOptions.get(mod.Id) ?? [])
+      for (let slot = 0; slot <= 20; slot++) {
+        const id = (opt as unknown as Record<string, number | undefined>)[`Turret${slot}Id`]
+        if (!id) continue
+        const ids = slotCandidates.get(slot) ?? []
+        ids.push(id)
+        slotCandidates.set(slot, ids)
+      }
+  const referenced = new Set([...slotCandidates.values()].flat())
+
   const slots = new Map<number, number>()
-  for (const tu of [...(db.unitTurrets.get(unit.Id) ?? [])].sort((a, b) => a.Order - b.Order)) {
-    const t = db.turrets.get(tu.TurretId)
-    if (!t) continue
-    if (t.IsDefault || !slots.has(tu.Order)) slots.set(tu.Order, tu.TurretId)
+  for (const [slot, ids] of slotCandidates) {
+    const def = ids.find((id) => db.turrets.get(id)?.IsDefault)
+    if (def) slots.set(slot, def)
   }
+  // Always-present turrets: top-level defaults no option references (AAVP's
+  // M2/Mk19 turret, BMP-3K Demidov's bow PKTs), ordered by TurretUnits.Order
+  // and keyed below the option slots. Child turrets (cupolas) are not slots;
+  // weaponsForTurretSlots attaches them to their parent.
+  const rows = [...(db.unitTurrets.get(unit.Id) ?? [])].sort((a, b) => a.Order - b.Order)
+  let i = 0
+  for (const tu of rows) {
+    const t = db.turrets.get(tu.TurretId)
+    if (!t || t.ParentTurretId || referenced.has(t.Id) || !t.IsDefault) continue
+    slots.set(BASE_SLOT + i++, t.Id)
+  }
+  // Units with no options and no default turrets (MC-130H): first top-level
+  // turret per Order group.
+  if (slots.size === 0)
+    for (const tu of rows) {
+      const t = db.turrets.get(tu.TurretId)
+      if (t && !t.ParentTurretId && !slots.has(tu.Order)) slots.set(tu.Order, tu.TurretId)
+    }
   return slots
 }
 
@@ -124,9 +163,7 @@ function weaponsForTurretSlots(
   slotTurrets: Map<number, number>,
 ): WeaponRow[] {
   const weapons: WeaponRow[] = []
-  const orders = [...slotTurrets.keys()].sort((a, b) => a - b)
-  for (const order of orders) {
-    const turretId = slotTurrets.get(order)!
+  const pushTurretWeapons = (turretId: number) => {
     const tws = [...(db.turretWeapons.get(turretId) ?? [])].sort(
       (a, b) => a.Order - b.Order,
     )
@@ -134,6 +171,19 @@ function weaponsForTurretSlots(
       const w = db.weapons.get(tw.WeaponId)
       if (w && !w.IsUnderbarrel) weapons.push(w)
     }
+  }
+  const unitTurrets = db.unitTurrets.get(unit.Id) ?? []
+  const orders = [...slotTurrets.keys()].sort((a, b) => a - b)
+  for (const order of orders) {
+    const turretId = slotTurrets.get(order)!
+    pushTurretWeapons(turretId)
+    // Child turrets (cupola mounts: M1A1's commander HMG + loader MMG)
+    // are active whenever their parent turret is, and swap with it
+    // (TUSK's cupolas hang off the TUSK main turret).
+    const children = unitTurrets
+      .filter((tu) => db.turrets.get(tu.TurretId)?.ParentTurretId === turretId)
+      .sort((a, b) => a.Order - b.Order)
+    for (const child of children) pushTurretWeapons(child.TurretId)
   }
   // Infantry loadouts come from SquadMembers (one weapon entry per carrier,
   // so mergeWeapons yields correct xN counts). SquadWeapons is a superset
@@ -321,7 +371,7 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout, weaponRows: WeaponRow[]
   if (mob?.IsAirDroppable)
     tags.push({ icon: 'airdrop', name: L('ui_infocard_ability_airdropable', 'Airdroppable'), detail: '' })
 
-  const weapons = mergeWeapons(weaponRows).map((mw) => buildWeaponModel(db, unit, mw))
+  const weapons = mergeWeapons(weaponRows, isInf).map((mw) => buildWeaponModel(db, unit, mw))
 
   return {
     unitId: unit.Id,
@@ -369,12 +419,16 @@ interface MergedWeapon {
 
 /** Group identical weapons regardless of slot position. `CanBeMerged`
  *  weapons merge by display identity (HUDName/icon/type) even across
- *  different Weapon rows; others merge by row id (Su-35S R-77-1 ×4). */
-function mergeWeapons(rows: WeaponRow[]): MergedWeapon[] {
+ *  different Weapon rows; others merge by row id (Su-35S R-77-1 ×4).
+ *  Infantry always merge by display identity: squads with two carriers of
+ *  the same weapon use separate "Team1"/"Team2" rows differing only in aim
+ *  time (CAAT Dragon's M47, Kornet/Metis/Igla/Verba teams), which the game
+ *  shows as one entry. */
+function mergeWeapons(rows: WeaponRow[], byDisplay = false): MergedWeapon[] {
   const out: MergedWeapon[] = []
   const byKey = new Map<string, MergedWeapon>()
   for (const w of rows) {
-    const key = w.CanBeMerged
+    const key = byDisplay || w.CanBeMerged
       ? `m:${w.HUDName ?? w.Name}|${w.HUDIcon}|${w.Type}`
       : `id:${w.Id}`
     let entry = byKey.get(key)

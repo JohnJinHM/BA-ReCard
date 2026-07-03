@@ -24,11 +24,22 @@ export function chromeUrl(name: string): string {
   return `${BASE}assets/chrome/${enc(name)}.png`
 }
 
+// Weapons.HUDIcon values with no matching sprite file in the export: three
+// case mismatches (the game resolves sprites case-insensitively; our static
+// host does not) and VEH_MilanER, which has no sprite at any casing —
+// INF_MILAN_ER is the only Milan ER icon shipped.
+const WEAPON_ICON_FIXES: Record<string, string> = {
+  INF_Mk46: 'INF_MK46',
+  Stinger_x4: 'STINGER_x4',
+  Kh_101: 'KH_101',
+  VEH_MilanER: 'INF_MILAN_ER',
+}
+
 /** Weapon silhouettes; Weapons.HUDIcon, e.g. "2A72". */
 export function weaponIconUrl(name: string | null): string | null {
   if (!name) return null
   if (passthrough(name)) return name
-  return `${BASE}assets/weapons/${enc(name)}.png`
+  return `${BASE}assets/weapons/${enc(WEAPON_ICON_FIXES[name] ?? name)}.png`
 }
 
 /** Ammo silhouettes; Ammunitions.HUDIcon, e.g. "AMMO_TOW_2A". */

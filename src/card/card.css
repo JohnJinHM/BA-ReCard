@@ -351,8 +351,8 @@ span.hero-portrait { position: absolute; inset: 0; }
      the ammo silhouette's position */
   background: linear-gradient(
     to right,
-    transparent 118px,
-    rgba(255, 255, 255, 0.05) 158px
+    transparent 120px,
+    rgba(255, 255, 255, 0.05) 300px
   );
 }
 .compact-weapon-left {

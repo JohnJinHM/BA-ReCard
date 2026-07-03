@@ -5,6 +5,7 @@ import { VariantPanel } from './ui/VariantPanel'
 import { CropDialog } from './ui/CropDialog'
 import { UnitCard } from './card/UnitCard'
 import { exportCardPng } from './export/exportPng'
+import { t } from './ui/i18n'
 import './app.css'
 
 export default function App() {
@@ -58,23 +59,23 @@ export default function App() {
           <>
             <div className="toolbar">
               <button className={compact ? '' : 'active'} onClick={() => setCompact(false)}>
-                Expanded
+                {t(lang, 'expanded')}
               </button>
               <button className={compact ? 'active' : ''} onClick={() => setCompact(true)}>
-                Compact
+                {t(lang, 'compact')}
               </button>
               <span className="toolbar-sep" />
               <button
                 className={editMode ? 'active' : ''}
                 onClick={() => setEditMode(!editMode)}
               >
-                {editMode ? 'Editing…' : 'Edit'}
+                {editMode ? t(lang, 'editing') : t(lang, 'edit')}
               </button>
-              <button onClick={() => fileInput.current?.click()}>Portrait…</button>
-              <button onClick={resetEdits}>Reset</button>
+              <button onClick={() => fileInput.current?.click()}>{t(lang, 'portrait')}</button>
+              <button onClick={resetEdits}>{t(lang, 'reset')}</button>
               <span className="toolbar-sep" />
               <button className="primary" onClick={onExport} disabled={exporting}>
-                {exporting ? 'Exporting…' : 'Export PNG'}
+                {exporting ? t(lang, 'exporting') : t(lang, 'exportPng')}
               </button>
             </div>
             <div className="card-stage">
