@@ -109,6 +109,20 @@ export function emptyWeapon(): WeaponModel {
   }
 }
 
+export function emptyAmmo(): AmmoModel {
+  // Zero/absent numerics default to "0" (not "-"), matching the resolver's
+  // formatting for real ammo rows.
+  return {
+    icon: null,
+    name: 'Ammo',
+    quantity: 'x1',
+    rangePill: EMPTY_VALUE,
+    traits: [],
+    stats: [],
+    compact: { penetration: '0', damage: '0', accuracy: '0', isHeat: false },
+  }
+}
+
 export function emptyTag(): AbilityLine {
   return { icon: null, name: '', detail: '' }
 }

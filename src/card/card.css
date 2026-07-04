@@ -68,6 +68,10 @@
   cursor: pointer;
 }
 .slot-remove:hover { background: #b23; color: #fff; }
+/* inline variant (flows in the ammo header row instead of overlapping) */
+.slot-remove.inline { position: static; flex: none; }
+/* compact ammo remove sits in the gap above the shell silhouette */
+.slot-remove.compact-ammo-remove { top: -8px; right: -2px; }
 
 .weapon-icon-btn {
   appearance: none;
@@ -93,6 +97,7 @@
 .add-weapon-btn:hover { border-color: var(--c-yellow); color: var(--c-yellow); }
 .add-weapon-btn.list { margin: 8px 6px; }
 .add-weapon-btn.compact { margin: 8px 12px 0; align-self: flex-start; }
+.add-weapon-btn.ammo { margin: 4px 12px 0 8px; padding: 3px 8px; font-size: 11px; align-self: flex-start; }
 
 /* editable weapon count badge */
 .count-edit { display: inline-flex; align-items: center; }
@@ -484,6 +489,9 @@ span.hero-portrait { position: absolute; inset: 0; }
   width: 72px;
   height: 18px;
 }
+/* edit-mode picker button overlays the shell silhouette's spot */
+.compact-ammo-main .ammo-icon-btn { position: absolute; left: 12px; top: 6px; width: 72px; height: 18px; }
+.compact-ammo-main .ammo-icon-btn .ammo-image { position: static; left: auto; top: auto; width: 100%; height: 100%; }
 .pill {
   border-radius: 3px;
   padding: 0 2px;

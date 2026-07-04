@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import type { CardModel, WeaponModel } from './model'
-import { emptyWeapon, emptyTag } from './model'
+import { emptyWeapon, emptyAmmo, emptyTag } from './model'
 import { EditableText } from './EditableText'
 import { ammoIconUrl, chromeUrl, iconUrl, isUploadedImage, portraitUrl, weaponIconUrl } from '../assets'
 import { useAppStore } from '../state/store'
@@ -65,8 +65,11 @@ const TAG_SLOTS = 4
 interface SlotCtx {
   openWeaponPicker(index: number): void
   openTagPicker(index: number): void
+  openAmmoPicker(weaponIndex: number, ammoIndex: number): void
   addWeapon(): void
   removeWeapon(index: number): void
+  addAmmo(weaponIndex: number): void
+  removeAmmo(weaponIndex: number, ammoIndex: number): void
 }
 const SlotContext = createContext<SlotCtx | null>(null)
 const useSlots = () => useContext(SlotContext)!
@@ -118,7 +121,10 @@ export function UnitCard({ card }: { card: CardModel }) {
 
   // picker target: which slot the picker dialog is filling
   const [picker, setPicker] = useState<
-    { kind: 'weapon'; index: number } | { kind: 'tag'; index: number } | null
+    | { kind: 'weapon'; index: number }
+    | { kind: 'tag'; index: number }
+    | { kind: 'ammo'; weaponIndex: number; ammoIndex: number }
+    | null
   >(null)
 
   const weaponItems = useMemo<PickerItem[]>(() => {
@@ -138,6 +144,23 @@ export function UnitCard({ card }: { card: CardModel }) {
     return items.sort((a, b) => a.label.localeCompare(b.label))
   }, [db])
 
+  const ammoItems = useMemo<PickerItem[]>(() => {
+    if (!db) return []
+    const seen = new Set<string>()
+    const items: PickerItem[] = []
+    for (const a of db.tables.Ammunitions) {
+      const key = `${a.HUDIcon}|${a.HUDName}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      items.push({
+        key: String(a.Id),
+        label: db.cardLoc(a.HUDName) || a.Name || a.HUDIcon || `Ammo ${a.Id}`,
+        url: ammoIconUrl(a.HUDIcon),
+      })
+    }
+    return items.sort((a, b) => a.label.localeCompare(b.label))
+  }, [db])
+
   const tagItems = useMemo<PickerItem[]>(
     () => TAG_ICON_NAMES.map((n) => ({ key: n, label: prettyIconName(n), url: iconUrl(n) })),
     [],
@@ -146,8 +169,11 @@ export function UnitCard({ card }: { card: CardModel }) {
   const slots: SlotCtx = {
     openWeaponPicker: (index) => setPicker({ kind: 'weapon', index }),
     openTagPicker: (index) => setPicker({ kind: 'tag', index }),
+    openAmmoPicker: (weaponIndex, ammoIndex) => setPicker({ kind: 'ammo', weaponIndex, ammoIndex }),
     addWeapon: () => update((c) => void c.weapons.push(emptyWeapon())),
     removeWeapon: (index) => update((c) => void c.weapons.splice(index, 1)),
+    addAmmo: (wi) => update((c) => void c.weapons[wi]?.ammo.push(emptyAmmo())),
+    removeAmmo: (wi, ai) => update((c) => void c.weapons[wi]?.ammo.splice(ai, 1)),
   }
 
   function pickWeapon(weaponId: string) {
@@ -169,6 +195,30 @@ export function UnitCard({ card }: { card: CardModel }) {
     if (picker?.kind !== 'weapon') return
     const index = picker.index
     update((c) => void (c.weapons[index] && (c.weapons[index]!.icon = dataUrl)))
+    setPicker(null)
+  }
+
+  function pickAmmo(ammoId: string) {
+    if (picker?.kind !== 'ammo' || !db) return
+    const a = db.ammunitions.get(Number(ammoId))
+    const { weaponIndex, ammoIndex } = picker
+    if (a)
+      update((c) => {
+        const slot = c.weapons[weaponIndex]?.ammo[ammoIndex]
+        if (!slot) return
+        slot.icon = a.HUDIcon
+        slot.name = db.cardLoc(a.HUDName) || a.Name || slot.name
+      })
+    setPicker(null)
+  }
+
+  function uploadAmmo(dataUrl: string) {
+    if (picker?.kind !== 'ammo') return
+    const { weaponIndex, ammoIndex } = picker
+    update((c) => {
+      const slot = c.weapons[weaponIndex]?.ammo[ammoIndex]
+      if (slot) slot.icon = dataUrl
+    })
     setPicker(null)
   }
 
@@ -216,7 +266,7 @@ export function UnitCard({ card }: { card: CardModel }) {
                     />
                     {editMode ? (
                       <button
-                        className="weapon-icon-btn edit-chrome"
+                        className="weapon-icon-btn"
                         title="Change weapon / icon"
                         onClick={(e) => {
                           e.stopPropagation()
@@ -264,6 +314,15 @@ export function UnitCard({ card }: { card: CardModel }) {
           iconClassName="mirror"
           onPick={pickWeapon}
           onUpload={uploadWeapon}
+          onCancel={() => setPicker(null)}
+        />
+      )}
+      {picker?.kind === 'ammo' && (
+        <PickerDialog
+          title="Select ammo"
+          items={ammoItems}
+          onPick={pickAmmo}
+          onUpload={uploadAmmo}
           onCancel={() => setPicker(null)}
         />
       )}
@@ -448,6 +507,8 @@ function ArmorBlock({ card, facing, className, layout }: {
 
 function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number }) {
   const update = useAppStore((s) => s.updateCard)
+  const editMode = useAppStore((s) => s.editMode)
+  const slots = useSlots()
   return (
     <div className="weapon-detail">
       <div className="weapon-top-bar">
@@ -484,7 +545,17 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
         {weapon.ammo.map((a, ai) => (
           <div className="ammo-info" key={ai}>
             <div className="ammo-top-row">
-              <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
+              {editMode ? (
+                <button
+                  className="weapon-icon-btn"
+                  title="Change ammo / icon"
+                  onClick={() => slots.openAmmoPicker(index, ai)}
+                >
+                  <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
+                </button>
+              ) : (
+                <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
+              )}
               <EditableText
                 className="ammo-title"
                 value={a.name}
@@ -495,6 +566,9 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
                 value={a.quantity}
                 onChange={(v) => update((c) => void (c.weapons[index]!.ammo[ai]!.quantity = v))}
               />
+              {editMode && (
+                <RemoveBtn className="inline" onClick={() => slots.removeAmmo(index, ai)} />
+              )}
             </div>
             {a.traits.length > 0 && (
               <div className="ammo-traits">
@@ -525,6 +599,11 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
             </div>
           </div>
         ))}
+        {editMode && (
+          <button className="add-weapon-btn ammo edit-chrome" onClick={() => slots.addAmmo(index)}>
+            + Add ammo
+          </button>
+        )}
       </div>
     </div>
   )
@@ -554,7 +633,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
             {/* icon first so the absolutely-positioned pill paints above it */}
             {editMode ? (
               <button
-                className="weapon-icon-btn edit-chrome"
+                className="weapon-icon-btn"
                 title="Change weapon / icon"
                 onClick={() => slots.openWeaponPicker(wi)}
               >
@@ -582,12 +661,28 @@ function BottomCompactBar({ card }: { card: CardModel }) {
                     value={a.rangePill}
                     onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.rangePill = v))}
                   />
-                  <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
+                  {editMode ? (
+                    <button
+                      className="weapon-icon-btn ammo-icon-btn"
+                      title="Change ammo / icon"
+                      onClick={() => slots.openAmmoPicker(wi, ai)}
+                    >
+                      <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
+                    </button>
+                  ) : (
+                    <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
+                  )}
                   <EditableText
                     className="pill green"
                     value={a.quantity}
                     onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.quantity = v))}
                   />
+                  {editMode && (
+                    <RemoveBtn
+                      className="compact-ammo-remove"
+                      onClick={() => slots.removeAmmo(wi, ai)}
+                    />
+                  )}
                 </div>
                 <EditableText
                   className={`compact-stat ${a.compact.isHeat ? 'heat' : ''}`}
@@ -612,6 +707,11 @@ function BottomCompactBar({ card }: { card: CardModel }) {
                 />
               </div>
             ))}
+            {editMode && (
+              <button className="add-weapon-btn ammo edit-chrome" onClick={() => slots.addAmmo(wi)}>
+                + Add ammo
+              </button>
+            )}
           </div>
         </div>
       ))}
