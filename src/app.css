@@ -61,6 +61,19 @@ body {
   cursor: pointer;
 }
 .lang-toggle:hover { border-color: #e8b23a; color: #e8b23a; }
+.app-title-actions { display: flex; align-items: center; gap: 6px; }
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #10151a;
+  border: 1px solid #2a323c;
+  color: inherit;
+  padding: 4px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.github-link:hover { border-color: #e8b23a; color: #e8b23a; }
 
 /* unit picker */
 .unit-picker { display: flex; flex-direction: column; gap: 10px; min-height: 0; }

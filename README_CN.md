@@ -83,6 +83,6 @@ node scripts/extract-assets.mjs <ExportedProject 路径>
 - [x] PNG 导出
 - [x] 从游戏导出Sprite/字体素材
 - [x] 本地化（英/中）
-- [ ] 对照游戏截图微调武器特性行 / 弹药面板
+- [x] 编辑模式下替换武器图标（上传自定义武器 logo）
 - [ ] 自定义卡片数据库（把编辑后的卡片以 JSON 存取到 localStorage）
-- [ ] 编辑模式下替换武器图标（上传自定义武器 logo）
+

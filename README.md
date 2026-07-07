@@ -92,5 +92,4 @@ and replace `public/data/`.
 - [x] Weapon slot fill: pick a weapon from the database (icon + name + type) or
       upload a custom icon
 - [x] Tag-icon slots (4): pick from the icon library or upload
-- [ ] Weapon trait rows / ammo panel fine-tuning vs in-game screenshots
 - [ ] Custom card database (save/load edited cards as JSON in localStorage)
