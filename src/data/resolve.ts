@@ -262,6 +262,7 @@ export function resolveCard(
 ): CardModel {
   let unit = db.units.get(unitId)
   if (!unit) throw new Error(`Unknown unit ${unitId}`)
+  const baseCost = unit.Cost
 
   const mods = [...(db.unitModifications.get(unitId) ?? [])].sort(
     (a, b) => a.Order - b.Order,
@@ -282,6 +283,11 @@ export function resolveCard(
   }
 
   let loadout = resolveBase(db, unit)
+  // Cost is always the armory card's base cost + option deltas. A replacement
+  // unit's own Cost usually equals base+delta but is not authoritative (several
+  // self-replacing options carry a nonzero delta, e.g. Airborne NGSW +10), and
+  // counting both double-charges (Marines 95 showed as 120).
+  loadout.cost = baseCost
   for (const opt of chosen) loadout = applyOption(db, loadout, opt)
 
   return buildCardModel(db, loadout, weaponsForTurretSlots(db, unit, loadout.slots))
