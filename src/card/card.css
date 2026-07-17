@@ -250,6 +250,10 @@ span.hero-portrait { position: absolute; inset: 0; }
   white-space: nowrap;
 }
 
+/* an unset pill is an edit-only affordance — keep it out of the export */
+.tag-pill.empty { min-width: 12px; min-height: 13px; background: rgba(124, 255, 129, 0.35); }
+.unit-card.exporting .tag-pill.empty { display: none; }
+
 /* armor overlay (ground vehicles): Top upper-center, Rear upper-right,
    Front lower-left, Sides lower-right — spanning ~2/3 card width and the
    full hero height between the name row and the bottom gradient. */

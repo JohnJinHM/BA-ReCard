@@ -94,6 +94,24 @@ function WeaponCount({ value, onChange }: { value: string; onChange(v: string): 
   )
 }
 
+/** Green value pill under a tag icon (e.g. smoke x8, ECM -50%); editable. */
+function TagPill({ value, colorKey, onChange }: {
+  value: string
+  colorKey: string
+  onChange(v: string): void
+}) {
+  const editMode = useAppStore((s) => s.editMode)
+  if (!editMode) return value ? <span className="tag-pill">{value}</span> : null
+  return (
+    <EditableText
+      className={`tag-pill ${value ? '' : 'empty'}`}
+      value={value}
+      colorKey={colorKey}
+      onChange={onChange}
+    />
+  )
+}
+
 /** Small "×" button to remove a slot (edit mode only). */
 function RemoveBtn({ onClick, className }: { onClick(): void; className?: string }) {
   return (
@@ -234,7 +252,8 @@ export function UnitCard({ card }: { card: CardModel }) {
   function setTag(index: number, icon: string | null, name: string) {
     update((c) => {
       while (c.tags.length < TAG_SLOTS) c.tags.push(emptyTag())
-      c.tags[index] = { icon, name, detail: c.tags[index]?.detail ?? '' }
+      // keep the detail pill when swapping icons, drop it when clearing the slot
+      c.tags[index] = { icon, name, detail: icon ? c.tags[index]?.detail ?? '' : '' }
       // drop trailing empties so view mode / export stay clean
       while (c.tags.length && !c.tags[c.tags.length - 1]!.icon) c.tags.pop()
     })
@@ -430,6 +449,11 @@ function TopInfoBar({ card }: { card: CardModel }) {
                           <Img className="tag-icon" src={iconUrl(t.icon)} alt={t.name} />
                           <span className="tag-edit-hint edit-chrome">✎</span>
                         </button>
+                        <TagPill
+                          value={t.detail}
+                          colorKey={`tag.${i}.detail`}
+                          onChange={(v) => update((c) => void (c.tags[i] && (c.tags[i]!.detail = v)))}
+                        />
                       </span>
                     )
                   return (
@@ -446,12 +470,17 @@ function TopInfoBar({ card }: { card: CardModel }) {
               : shownTags.map((t, i) => (
                   <span className="tag-item" key={`t${i}`} title={t.name}>
                     <Img className="tag-icon" src={iconUrl(t.icon)} alt={t.name} />
+                    {t.detail && <span className="tag-pill">{t.detail}</span>}
                   </span>
                 ))}
             {abilities.map((a, i) => (
               <span className="tag-item" key={`a${i}`} title={a.name}>
                 <Img className="tag-icon" src={iconUrl(a.icon)} alt={a.name} />
-                {a.detail && <span className="tag-pill">{a.detail}</span>}
+                <TagPill
+                  value={a.detail}
+                  colorKey={`ability.${i}.detail`}
+                  onChange={(v) => update((c) => void (c.abilities[i]!.detail = v))}
+                />
               </span>
             ))}
           </div>
