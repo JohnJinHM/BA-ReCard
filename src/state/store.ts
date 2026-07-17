@@ -19,6 +19,12 @@ interface AppState {
   editMode: boolean
   /** the card as displayed; starts as the resolved model, then absorbs edits */
   card: CardModel | null
+  /** the displayed card has manual edits that a re-resolve would discard */
+  dirty: boolean
+  /** colorKey of the last-focused editable text; the ColorPanel recolors it */
+  colorTarget: string | null
+  /** card-switch action awaiting "discard edits?" confirmation */
+  pendingAction: (() => void) | null
 
   load(): Promise<void>
   setLang(lang: Lang): Promise<void>
@@ -26,9 +32,14 @@ interface AppState {
   selectOption(modificationId: number, optionId: number): void
   setCompact(compact: boolean): void
   setEditMode(on: boolean): void
+  setColorTarget(key: string | null): void
   /** apply a partial or full replacement of the displayed card */
   updateCard(mutate: (card: CardModel) => void): void
   resetEdits(): void
+  /** run `action` now, or park it behind the unsaved-edits confirm dialog */
+  guardEdits(action: () => void): void
+  confirmPending(): void
+  cancelPending(): void
 }
 
 function resolve(db: GameDb, unitId: number, selection: VariantSelection): CardModel {
@@ -45,6 +56,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   editMode: false,
   card: null,
+  dirty: false,
+  colorTarget: null,
+  pendingAction: null,
 
   async load() {
     try {
@@ -70,13 +84,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectUnit(unitId) {
     const { db } = get()
     if (!db || unitId == null) {
-      set({ selectedUnitId: unitId, selection: {}, card: null })
+      set({ selectedUnitId: unitId, selection: {}, card: null, dirty: false, colorTarget: null })
       return
     }
     set({
       selectedUnitId: unitId,
       selection: {},
       card: resolve(db, unitId, {}),
+      dirty: false,
+      colorTarget: null,
     })
   },
 
@@ -84,7 +100,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { db, selectedUnitId, selection } = get()
     if (!db || selectedUnitId == null) return
     const next = { ...selection, [modificationId]: optionId }
-    set({ selection: next, card: resolve(db, selectedUnitId, next) })
+    set({
+      selection: next,
+      card: resolve(db, selectedUnitId, next),
+      dirty: false,
+      colorTarget: null,
+    })
   },
 
   setCompact(compact) {
@@ -92,7 +113,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setEditMode(on) {
-    set({ editMode: on })
+    set(on ? { editMode: true } : { editMode: false, colorTarget: null })
+  },
+
+  setColorTarget(key) {
+    set({ colorTarget: key })
   },
 
   updateCard(mutate) {
@@ -100,12 +125,27 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!card) return
     const copy = structuredClone(card)
     mutate(copy)
-    set({ card: copy })
+    set({ card: copy, dirty: true })
   },
 
   resetEdits() {
     const { db, selectedUnitId, selection } = get()
     if (!db || selectedUnitId == null) return
-    set({ card: resolve(db, selectedUnitId, selection) })
+    set({ card: resolve(db, selectedUnitId, selection), dirty: false, colorTarget: null })
+  },
+
+  guardEdits(action) {
+    if (get().dirty) set({ pendingAction: action })
+    else action()
+  },
+
+  confirmPending() {
+    const action = get().pendingAction
+    set({ pendingAction: null })
+    action?.()
+  },
+
+  cancelPending() {
+    set({ pendingAction: null })
   },
 }))

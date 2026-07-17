@@ -72,6 +72,9 @@ export interface WeaponModel {
 export interface CardModel {
   /** source unit id, null for fully custom cards */
   unitId: number | null
+  /** per-field text color overrides, keyed by the EditableText colorKey
+   *  (e.g. "name", "weapon.0.ammo.1.qty"); absent key = theme default */
+  textColors?: Record<string, string>
   name: string
   cost: string
   countryId: number | null
@@ -96,6 +99,28 @@ export interface CardModel {
 }
 
 export const EMPTY_VALUE = '-'
+
+/**
+ * After removing the slot at `prefix{removed}` (e.g. prefix "weapon." or
+ * "weapon.2.ammo."), drop its color overrides and shift higher indices down
+ * so colors keep following their re-indexed weapons/ammo.
+ */
+export function removeIndexedColors(card: CardModel, prefix: string, removed: number) {
+  const colors = card.textColors
+  if (!colors) return
+  const next: Record<string, string> = {}
+  for (const [key, value] of Object.entries(colors)) {
+    const m = key.startsWith(prefix) ? /^(\d+)(\..+)$/.exec(key.slice(prefix.length)) : null
+    if (!m) {
+      next[key] = value
+      continue
+    }
+    const n = Number(m[1])
+    if (n === removed) continue
+    next[prefix + (n > removed ? n - 1 : n) + m[2]] = value
+  }
+  card.textColors = next
+}
 
 export function emptyWeapon(): WeaponModel {
   return {

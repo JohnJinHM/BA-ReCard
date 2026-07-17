@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from './state/store'
 import { UnitPicker } from './ui/UnitPicker'
 import { VariantPanel } from './ui/VariantPanel'
+import { ColorPanel } from './ui/ColorPanel'
 import { CropDialog } from './ui/CropDialog'
 import { UnitCard } from './card/UnitCard'
 import { exportCardPng } from './export/exportPng'
@@ -9,8 +10,10 @@ import { t } from './ui/i18n'
 import './app.css'
 
 export default function App() {
-  const { db, loadError, card, compact, editMode, lang } = useAppStore()
+  const { db, loadError, card, compact, editMode, lang, pendingAction } = useAppStore()
   const load = useAppStore((s) => s.load)
+  const confirmPending = useAppStore((s) => s.confirmPending)
+  const cancelPending = useAppStore((s) => s.cancelPending)
   const setCompact = useAppStore((s) => s.setCompact)
   const setEditMode = useAppStore((s) => s.setEditMode)
   const setLang = useAppStore((s) => s.setLang)
@@ -106,6 +109,7 @@ export default function App() {
 
       <aside className="sidebar right">
         <VariantPanel />
+        <ColorPanel />
       </aside>
 
       <input
@@ -119,6 +123,20 @@ export default function App() {
           e.target.value = ''
         }}
       />
+      {pendingAction && (
+        <div className="crop-overlay" onClick={cancelPending}>
+          <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
+            <h3>{t(lang, 'unsavedTitle')}</h3>
+            <p>{t(lang, 'unsavedBody')}</p>
+            <div className="confirm-actions">
+              <button onClick={cancelPending}>{t(lang, 'cancel')}</button>
+              <button className="danger" onClick={confirmPending}>
+                {t(lang, 'discard')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {cropSrc && (
         <CropDialog
           imageSrc={cropSrc}

@@ -8,6 +8,7 @@ export function UnitPicker() {
   const db = useAppStore((s) => s.db)
   const selectedUnitId = useAppStore((s) => s.selectedUnitId)
   const selectUnit = useAppStore((s) => s.selectUnit)
+  const guardEdits = useAppStore((s) => s.guardEdits)
   const [category, setCategory] = useState<number>(2) // Vehicles tab
   const [query, setQuery] = useState('')
 
@@ -59,7 +60,7 @@ export function UnitPicker() {
           <button
             key={u.Id}
             className={`picker-item ${u.Id === selectedUnitId ? 'active' : ''}`}
-            onClick={() => selectUnit(u.Id)}
+            onClick={() => guardEdits(() => selectUnit(u.Id))}
             title={u.HUDName ?? undefined}
           >
             <UnitThumb file={u.ThumbnailFileName} name={u.HUDName ?? u.Name ?? ''} />

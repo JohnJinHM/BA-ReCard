@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import type { CardModel, WeaponModel } from './model'
-import { emptyWeapon, emptyAmmo, emptyTag } from './model'
+import { emptyWeapon, emptyAmmo, emptyTag, removeIndexedColors } from './model'
 import { EditableText } from './EditableText'
 import { ammoIconUrl, chromeUrl, iconUrl, isUploadedImage, portraitUrl, weaponIconUrl } from '../assets'
 import { useAppStore } from '../state/store'
@@ -171,9 +171,18 @@ export function UnitCard({ card }: { card: CardModel }) {
     openTagPicker: (index) => setPicker({ kind: 'tag', index }),
     openAmmoPicker: (weaponIndex, ammoIndex) => setPicker({ kind: 'ammo', weaponIndex, ammoIndex }),
     addWeapon: () => update((c) => void c.weapons.push(emptyWeapon())),
-    removeWeapon: (index) => update((c) => void c.weapons.splice(index, 1)),
+    removeWeapon: (index) =>
+      update((c) => {
+        c.weapons.splice(index, 1)
+        removeIndexedColors(c, 'weapon.', index)
+      }),
     addAmmo: (wi) => update((c) => void c.weapons[wi]?.ammo.push(emptyAmmo())),
-    removeAmmo: (wi, ai) => update((c) => void c.weapons[wi]?.ammo.splice(ai, 1)),
+    removeAmmo: (wi, ai) =>
+      update((c) => {
+        if (!c.weapons[wi]) return
+        c.weapons[wi].ammo.splice(ai, 1)
+        removeIndexedColors(c, `weapon.${wi}.ammo.`, ai)
+      }),
   }
 
   function pickWeapon(weaponId: string) {
@@ -289,6 +298,7 @@ export function UnitCard({ card }: { card: CardModel }) {
                     <EditableText
                       className="weapon-list-name"
                       value={w.name}
+                      colorKey={`weapon.${i}.name`}
                       onChange={(v) => update((c) => void (c.weapons[i]!.name = v))}
                     />
                   </div>
@@ -371,12 +381,14 @@ function TopInfoBar({ card }: { card: CardModel }) {
           <EditableText
             className="unit-name"
             value={card.name}
+            colorKey="name"
             onChange={(v) => update((c) => void (c.name = v))}
           />
           <div className="points-block">
             <EditableText
               className="points-value"
               value={card.cost}
+              colorKey="cost"
               onChange={(v) => update((c) => void (c.cost = v))}
             />
             <TintIcon className="points-icon" src={iconUrl('Points Icon')} color="#f4d42a" title="points" />
@@ -453,6 +465,7 @@ function TopInfoBar({ card }: { card: CardModel }) {
               <EditableText
                 className="stat-caption"
                 value={s.value}
+                colorKey={`stat.${i}.value`}
                 onChange={(v) => update((c) => void (c.stats[i]!.value = v))}
               />
             </div>
@@ -487,17 +500,20 @@ function ArmorBlock({ card, facing, className, layout }: {
       <EditableText
         className="armor-title"
         value={card.armorLabels[facing]}
+        colorKey={`armorLabel.${facing}`}
         onChange={(v) => update((c) => void (c.armorLabels[facing] = v))}
       />
       <div className={`armor-values ${layout}`}>
         <EditableText
           className="armor-kin"
           value={f.kinetic}
+          colorKey={`armor.${facing}.kin`}
           onChange={(v) => update((c) => void (c.armor![facing].kinetic = v))}
         />
         <EditableText
           className="armor-heat"
           value={f.heat}
+          colorKey={`armor.${facing}.heat`}
           onChange={(v) => update((c) => void (c.armor![facing].heat = v))}
         />
       </div>
@@ -515,6 +531,7 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
         <EditableText
           className="weapon-title"
           value={weapon.typeLabel || weapon.name}
+          colorKey={`weapon.${index}.type`}
           onChange={(v) => update((c) => void (c.weapons[index]!.typeLabel = v))}
         />
         <div className="weapon-traits">
@@ -530,11 +547,13 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
             <EditableText
               className="stats-item-label"
               value={s.label}
+              colorKey={`weapon.${index}.stat.${si}.label`}
               onChange={(v) => update((c) => void (c.weapons[index]!.stats[si]!.label = v))}
             />
             <EditableText
               className="stats-item-value"
               value={s.value}
+              colorKey={`weapon.${index}.stat.${si}.value`}
               onChange={(v) => update((c) => void (c.weapons[index]!.stats[si]!.value = v))}
             />
           </div>
@@ -559,11 +578,13 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
               <EditableText
                 className="ammo-title"
                 value={a.name}
+                colorKey={`weapon.${index}.ammo.${ai}.name`}
                 onChange={(v) => update((c) => void (c.weapons[index]!.ammo[ai]!.name = v))}
               />
               <EditableText
                 className="ammo-count"
                 value={a.quantity}
+                colorKey={`weapon.${index}.ammo.${ai}.qty`}
                 onChange={(v) => update((c) => void (c.weapons[index]!.ammo[ai]!.quantity = v))}
               />
               {editMode && (
@@ -583,6 +604,7 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
                   <EditableText
                     className="stats-item-label"
                     value={s.label}
+                    colorKey={`weapon.${index}.ammo.${ai}.stat.${si}.label`}
                     onChange={(v) =>
                       update((c) => void (c.weapons[index]!.ammo[ai]!.stats[si]!.label = v))
                     }
@@ -590,6 +612,7 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
                   <EditableText
                     className="stats-item-value"
                     value={s.value}
+                    colorKey={`weapon.${index}.ammo.${ai}.stat.${si}.value`}
                     onChange={(v) =>
                       update((c) => void (c.weapons[index]!.ammo[ai]!.stats[si]!.value = v))
                     }
@@ -628,6 +651,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
             <EditableText
               className="compact-weapon-name"
               value={w.name}
+              colorKey={`weapon.${wi}.name`}
               onChange={(v) => update((c) => void (c.weapons[wi]!.name = v))}
             />
             {/* icon first so the absolutely-positioned pill paints above it */}
@@ -659,6 +683,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
                   <EditableText
                     className="pill yellow"
                     value={a.rangePill}
+                    colorKey={`weapon.${wi}.ammo.${ai}.range`}
                     onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.rangePill = v))}
                   />
                   {editMode ? (
@@ -675,6 +700,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
                   <EditableText
                     className="pill green"
                     value={a.quantity}
+                    colorKey={`weapon.${wi}.ammo.${ai}.qty`}
                     onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.quantity = v))}
                   />
                   {editMode && (
@@ -687,6 +713,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
                 <EditableText
                   className={`compact-stat ${a.compact.isHeat ? 'heat' : ''}`}
                   value={a.compact.penetration}
+                  colorKey={`weapon.${wi}.ammo.${ai}.pen`}
                   onChange={(v) =>
                     update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.penetration = v))
                   }
@@ -694,6 +721,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
                 <EditableText
                   className="compact-stat"
                   value={a.compact.damage}
+                  colorKey={`weapon.${wi}.ammo.${ai}.dmg`}
                   onChange={(v) =>
                     update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.damage = v))
                   }
@@ -701,6 +729,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
                 <EditableText
                   className="compact-stat"
                   value={a.compact.accuracy}
+                  colorKey={`weapon.${wi}.ammo.${ai}.acc`}
                   onChange={(v) =>
                     update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.accuracy = v))
                   }

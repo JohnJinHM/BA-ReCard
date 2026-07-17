@@ -41,6 +41,8 @@
   user-select: text;
   min-width: 1ch;
 }
+/* the field the sidebar ColorPanel currently recolors */
+.editable.color-target { outline: 1px solid #f4d42a; }
 .unit-card.exporting .editable { outline: none; }
 
 /* edit-only affordances (add/remove/pick buttons, placeholders) never appear

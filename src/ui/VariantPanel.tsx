@@ -11,6 +11,7 @@ export function VariantPanel() {
   const unitId = useAppStore((s) => s.selectedUnitId)
   const selection = useAppStore((s) => s.selection)
   const selectOption = useAppStore((s) => s.selectOption)
+  const guardEdits = useAppStore((s) => s.guardEdits)
 
   if (!db || unitId == null) return null
   const mods = [...(db.unitModifications.get(unitId) ?? [])].sort(
@@ -33,7 +34,11 @@ export function VariantPanel() {
             <span className="variant-label">{pretty(db.loc(mod.UIName))}</span>
             <select
               value={current}
-              onChange={(e) => selectOption(mod.Id, Number(e.target.value))}
+              onChange={(e) => {
+                const optionId = Number(e.target.value)
+                // variant changes re-resolve the card, so they discard edits too
+                guardEdits(() => selectOption(mod.Id, optionId))
+              }}
             >
               {opts.map((o) => (
                 <option key={o.Id} value={o.Id}>

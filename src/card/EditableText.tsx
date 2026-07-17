@@ -5,25 +5,42 @@ interface Props {
   value: string
   onChange(next: string): void
   className?: string
+  /** stable key into card.textColors; when set, focusing the span in edit
+   *  mode targets it for the sidebar ColorPanel and the override colors it */
+  colorKey?: string
 }
 
 /**
  * Inline-editable text span. In edit mode every card value renders through
- * this, so any number/text on the card can be rewritten directly.
+ * this, so any number/text on the card can be rewritten directly — and, for
+ * spans with a colorKey, recolored via the sidebar ColorPanel.
  */
-export function EditableText({ value, onChange, className }: Props) {
+export function EditableText({ value, onChange, className, colorKey }: Props) {
   const editMode = useAppStore((s) => s.editMode)
+  const color = useAppStore((s) => (colorKey ? s.card?.textColors?.[colorKey] : undefined))
+  const isColorTarget = useAppStore((s) => colorKey != null && s.colorTarget === colorKey)
+  const setColorTarget = useAppStore((s) => s.setColorTarget)
   const ref = useRef<HTMLSpanElement>(null)
 
-  if (!editMode) return <span className={className}>{value}</span>
+  const style = color ? { color } : undefined
+  if (!editMode)
+    return (
+      <span className={className} style={style}>
+        {value}
+      </span>
+    )
 
   return (
     <span
       ref={ref}
-      className={`${className ?? ''} editable`}
+      className={`${className ?? ''} editable ${isColorTarget ? 'color-target' : ''}`}
+      style={style}
       contentEditable
       suppressContentEditableWarning
       spellCheck={false}
+      onFocus={() => {
+        if (colorKey) setColorTarget(colorKey)
+      }}
       onBlur={() => {
         const next = ref.current?.innerText ?? ''
         if (next !== value) onChange(next)
