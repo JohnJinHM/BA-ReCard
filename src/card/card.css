@@ -169,17 +169,30 @@ span.hero-portrait { position: absolute; inset: 0; }
 /* right strip: abilities + amphibious/airdrop tags, bottom-right */
 .right-strip-divider {
   position: absolute;
-  right: 50px;
+  right: 49px; /* white line keeps its in-game spot (50px); dark line sits 1px right */
   top: 48px;
   bottom: 64px;
-  width: 1px;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(255, 255, 255, 0.4) 22%,
-    rgba(255, 255, 255, 0.4) 78%,
-    transparent
-  );
+  width: 2px;
+  /* the game draws a bare white 40% line, which disappears on portraits that
+     are bright under it (some infantry stock art, custom uploads); pair it
+     with a dark twin line so it keeps contrast on any portrait */
+  background:
+    linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255, 255, 255, 0.4) 22%,
+        rgba(255, 255, 255, 0.4) 78%,
+        transparent
+      )
+      left / 1px 100% no-repeat,
+    linear-gradient(
+        to bottom,
+        transparent,
+        rgba(0, 0, 0, 0.45) 22%,
+        rgba(0, 0, 0, 0.45) 78%,
+        transparent
+      )
+      right / 1px 100% no-repeat;
 }
 .tags-col {
   position: absolute;
@@ -192,7 +205,14 @@ span.hero-portrait { position: absolute; inset: 0; }
   padding-bottom: 8px; /* room for the pill hanging under the last icon */
 }
 .tag-item { position: relative; width: 30px; height: 30px; }
-.tag-icon { width: 30px; height: 30px; object-fit: contain; }
+.tag-icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  /* like .right-strip-divider's dark twin: the white sprites need a dark
+     halo to stay legible when a bright (custom) portrait sits under them */
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.6));
+}
 
 /* tag-icon slot editing */
 .tag-edit-btn {
