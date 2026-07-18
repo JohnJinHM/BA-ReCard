@@ -17,7 +17,27 @@ const STRINGS = {
     chi: '切换卡片将放弃当前的修改。',
   },
   discard: { eng: 'Discard edits', chi: '放弃修改' },
+  saveAndSwitch: { eng: 'Save & switch', chi: '保存并切换' },
   cancel: { eng: 'Cancel', chi: '取消' },
+  save: { eng: 'Save', chi: '保存' },
+  savedCards: { eng: 'Saved Cards', chi: '已保存卡片' },
+  savedEmpty: {
+    eng: 'Nothing saved yet — Save keeps the current card here.',
+    chi: '尚未保存卡片——点击「保存」将当前卡片存到这里。',
+  },
+  load: { eng: 'Load', chi: '载入' },
+  delete: { eng: 'Delete', chi: '删除' },
+  deleteConfirm: { eng: 'Delete this saved card?', chi: '删除这张已保存的卡片？' },
+  saveFailed: {
+    eng: 'Save failed: browser storage is full.',
+    chi: '保存失败：浏览器存储空间已满。',
+  },
+  exportJson: { eng: 'Export JSON', chi: '导出 JSON' },
+  importJson: { eng: 'Import JSON…', chi: '导入 JSON…' },
+  importFailed: {
+    eng: 'Import failed: not an exported card file.',
+    chi: '导入失败：不是导出的卡片文件。',
+  },
   textColor: { eng: 'Text Color', chi: '文字颜色' },
   textColorHint: {
     eng: 'Click text on the card to recolor it.',

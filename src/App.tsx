@@ -3,6 +3,7 @@ import { useAppStore } from './state/store'
 import { UnitPicker } from './ui/UnitPicker'
 import { VariantPanel } from './ui/VariantPanel'
 import { ColorPanel } from './ui/ColorPanel'
+import { SavedCardsPanel } from './ui/SavedCardsPanel'
 import { CropDialog } from './ui/CropDialog'
 import { UnitCard } from './card/UnitCard'
 import { exportCardPng } from './export/exportPng'
@@ -19,6 +20,7 @@ export default function App() {
   const setLang = useAppStore((s) => s.setLang)
   const resetEdits = useAppStore((s) => s.resetEdits)
   const updateCard = useAppStore((s) => s.updateCard)
+  const saveCard = useAppStore((s) => s.saveCard)
 
   const [cropSrc, setCropSrc] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -94,6 +96,7 @@ export default function App() {
               <button onClick={() => fileInput.current?.click()}>{t(lang, 'portrait')}</button>
               <button onClick={resetEdits}>{t(lang, 'reset')}</button>
               <span className="toolbar-sep" />
+              <button onClick={saveCard}>{t(lang, 'save')}</button>
               <button className="primary" onClick={onExport} disabled={exporting}>
                 {exporting ? t(lang, 'exporting') : t(lang, 'exportPng')}
               </button>
@@ -110,6 +113,7 @@ export default function App() {
       <aside className="sidebar right">
         <VariantPanel />
         <ColorPanel />
+        <SavedCardsPanel />
       </aside>
 
       <input
@@ -130,6 +134,14 @@ export default function App() {
             <p>{t(lang, 'unsavedBody')}</p>
             <div className="confirm-actions">
               <button onClick={cancelPending}>{t(lang, 'cancel')}</button>
+              <button
+                onClick={() => {
+                  saveCard()
+                  confirmPending()
+                }}
+              >
+                {t(lang, 'saveAndSwitch')}
+              </button>
               <button className="danger" onClick={confirmPending}>
                 {t(lang, 'discard')}
               </button>

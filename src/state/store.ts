@@ -4,6 +4,8 @@ import { loadGameDb } from '../data/db'
 import type { VariantSelection } from '../data/resolve'
 import { resolveCard } from '../data/resolve'
 import type { CardModel } from '../card/model'
+import type { SavedCard } from './savedCards'
+import { loadSavedCards, newSavedCardId, persistSavedCards } from './savedCards'
 
 export type Lang = 'eng' | 'chi'
 
@@ -25,6 +27,10 @@ interface AppState {
   colorTarget: string | null
   /** card-switch action awaiting "discard edits?" confirmation */
   pendingAction: (() => void) | null
+  /** custom card database (persisted to localStorage as JSON) */
+  savedCards: SavedCard[]
+  /** the last saveCard() could not be persisted (storage full/unavailable) */
+  saveError: boolean
 
   load(): Promise<void>
   setLang(lang: Lang): Promise<void>
@@ -36,6 +42,12 @@ interface AppState {
   /** apply a partial or full replacement of the displayed card */
   updateCard(mutate: (card: CardModel) => void): void
   resetEdits(): void
+  /** snapshot the displayed card into the saved list (overwrites same name) */
+  saveCard(): void
+  /** add an entry parsed from an exported .json file (overwrites same name) */
+  importSavedCard(entry: SavedCard): void
+  loadSavedCard(id: string): void
+  deleteSavedCard(id: string): void
   /** run `action` now, or park it behind the unsaved-edits confirm dialog */
   guardEdits(action: () => void): void
   confirmPending(): void
@@ -59,6 +71,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   dirty: false,
   colorTarget: null,
   pendingAction: null,
+  savedCards: loadSavedCards(),
+  saveError: false,
 
   async load() {
     try {
@@ -132,6 +146,51 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { db, selectedUnitId, selection } = get()
     if (!db || selectedUnitId == null) return
     set({ card: resolve(db, selectedUnitId, selection), dirty: false, colorTarget: null })
+  },
+
+  saveCard() {
+    const { card, compact, selection } = get()
+    if (!card) return
+    get().importSavedCard({
+      id: newSavedCardId(),
+      name: card.name.trim() || 'Untitled',
+      savedAt: Date.now(),
+      compact,
+      selection,
+      card: structuredClone(card),
+    })
+    if (!get().saveError) set({ dirty: false })
+  },
+
+  importSavedCard(entry) {
+    const { savedCards } = get()
+    const existing = savedCards.find((s) => s.name === entry.name)
+    const merged = existing ? { ...entry, id: existing.id } : entry
+    const next = existing
+      ? savedCards.map((s) => (s.id === existing.id ? merged : s))
+      : [merged, ...savedCards]
+    const ok = persistSavedCards(next)
+    // even when persistence fails the entry stays loadable for this session
+    set({ savedCards: next, saveError: !ok })
+  },
+
+  loadSavedCard(id) {
+    const entry = get().savedCards.find((s) => s.id === id)
+    if (!entry) return
+    set({
+      selectedUnitId: entry.card.unitId,
+      selection: entry.selection ?? {},
+      compact: entry.compact,
+      card: structuredClone(entry.card),
+      dirty: false,
+      colorTarget: null,
+    })
+  },
+
+  deleteSavedCard(id) {
+    const next = get().savedCards.filter((s) => s.id !== id)
+    persistSavedCards(next)
+    set({ savedCards: next })
   },
 
   guardEdits(action) {

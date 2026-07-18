@@ -370,6 +370,61 @@ body {
   font-family: inherit;
   font-size: 12px;
 }
+/* saved cards panel (right sidebar, under Variants/Text Color) */
+.saved-panel { display: flex; flex-direction: column; gap: 6px; }
+.saved-panel h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b98a5;
+}
+.saved-hint { font-size: 11px; color: #56637a; }
+.saved-error { font-size: 11px; color: #ff7b6b; }
+.saved-row { display: flex; gap: 4px; }
+.saved-load {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  background: #10151a;
+  border: 1px solid #2a323c;
+  border-radius: 3px;
+  color: inherit;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.saved-load:hover { border-color: #e8b23a; }
+.saved-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.saved-date { flex: none; font-size: 10px; color: #56637a; }
+.saved-action {
+  flex: none;
+  width: 26px;
+  background: #10151a;
+  border: 1px solid #2a323c;
+  border-radius: 3px;
+  color: #8b98a5;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1;
+}
+.saved-action:hover { border-color: #e8b23a; color: #e8b23a; }
+.saved-action.danger:hover { border-color: #b23; color: #ff9b8b; }
+.saved-import {
+  background: #10151a;
+  border: 1px solid #2a323c;
+  border-radius: 3px;
+  color: inherit;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.saved-import:hover { border-color: #56637a; }
+
 .color-native-input {
   flex: none;
   width: 46px;
