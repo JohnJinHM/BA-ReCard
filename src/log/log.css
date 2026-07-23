@@ -1,0 +1,204 @@
+/* Kill-log editor — imitates the in-game kill feed. Colors/spacing calibrated
+   against samples/Screenshot 2026-07-22 220415.png. Shares the card theme
+   (Inter, yellow points) and the global .editable / .edit-chrome rules from
+   card.css. Fixed column tracks keep every row (and its sub-rows) aligned. */
+
+.kill-log {
+  --log-blue: #0d8ae8;
+  --log-red: #e83a20;
+  --c-yellow: #f4d42a;
+  --c-text: #e7f8e5;
+
+  width: 1180px;
+  /* never shrink inside the (flex) stage — shrinking collapses the fixed
+     tracks and corrupts the export in narrow viewports */
+  flex: none;
+  /* no panel: the log floats on the stage and exports to a transparent PNG
+     (the fading grey bars carry their own translucency) */
+  background: transparent;
+  color: var(--c-text);
+  font-family: 'Inter', sans-serif;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px; /* between kill entries (~1.5× the old spacing) */
+  box-sizing: border-box;
+}
+.kill-log * { box-sizing: border-box; }
+
+.kill-log-empty {
+  padding: 48px 0;
+  text-align: center;
+  color: rgba(231, 248, 229, 0.5);
+  font-size: 15px;
+}
+
+.log-entry { position: relative; display: flex; flex-direction: column; gap: 12px; } /* between victim sub-rows */
+
+/* Fixed column tracks (identical on every row) keep victim points/icons aligned
+   across an entry's full and sub rows. Left unit hugs the far left; the point
+   columns sit at ~40% / ~58%; the victim unit starts a wide fixed gap right of
+   its points. Geometry from samples/Screenshot 2026-07-22 220415.png.
+   cols: leftUnit | killerPts | centerGap | victimPts | victimUnit */
+.log-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 401px 110px 95px 110px 1fr;
+  align-items: center;
+  min-height: 54px;
+}
+/* half-transparent grey bar, fading symmetrically from the centre */
+.log-row.full {
+  background: linear-gradient(
+    90deg,
+    transparent 2%,
+    rgba(255, 255, 255, 0.085) 50%,
+    transparent 98%
+  );
+}
+/* victim sub-row: the full bar cut in half — sharp grey edge at the centre,
+   fading out toward the right (matches the sample's continuation banner) */
+.log-row.sub {
+  background: linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 50%,
+    rgba(255, 255, 255, 0.085) 50%,
+    transparent 98%
+  );
+}
+
+/* unit blocks, ordered logo → name; both anchored toward their points and
+   left-aligned, so long names wrap and grow the row height (kept centered) */
+.log-unit { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.log-unit.left { grid-column: 1; justify-self: start; }
+.log-unit.right { grid-column: 5; justify-self: start; padding-left: 72px; }
+
+.log-name {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+/* max-widths sized so names up to ~"A-10C Thunderbolt II" (270px) stay on one
+   line and only longer ones wrap (rows then grow taller — see .log-row) */
+.log-unit.left .log-name { color: var(--log-blue); max-width: 298px; }
+.log-unit.right .log-name { color: var(--log-red); max-width: 248px; }
+
+/* points, centered in their fixed tracks so rows line up */
+.log-pts-col { display: flex; align-items: center; justify-content: center; }
+.log-pts-col.left { grid-column: 2; }
+.log-pts-col.right { grid-column: 4; }
+.log-gap { grid-column: 3; min-height: 1px; }
+
+.log-pts {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--c-yellow);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.log-pts-suffix { font-size: 0.82em; font-weight: 700; }
+
+/* logo silhouette (tinted game thumbnail) or uploaded icon */
+.log-logo-wrap,
+.log-logo-btn { display: inline-flex; align-items: center; flex: none; }
+.log-logo { width: 84px; height: 35px; display: inline-block; flex: none; object-fit: contain; }
+/* game silhouettes sit low in the source art; crop ~top fifth and bottom-anchor
+   so the tinted vehicle reads centered in the row (uploads keep object-fit) */
+.log-logo.tinted {
+  -webkit-mask-size: 100% auto;
+  mask-size: 100% auto;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center bottom;
+  mask-position: center bottom;
+}
+.log-logo.empty { border: 1px dashed rgba(231, 248, 229, 0.3); border-radius: 4px; }
+
+.log-logo-btn {
+  appearance: none;
+  background: none;
+  border: 1px dashed transparent;
+  padding: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.log-logo-btn:hover { border-color: rgba(244, 212, 42, 0.7); }
+
+/* entry-remove: centered on the first (full) row, in the left gutter */
+.log-entry-remove {
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  line-height: 16px;
+  text-align: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 120, 100, 0.8);
+  background: rgba(30, 10, 10, 0.85);
+  color: #ff9b8b;
+  font-size: 14px;
+  cursor: pointer;
+}
+.log-entry-remove:hover { background: #b23; color: #fff; }
+
+.log-add,
+.log-add-victim,
+.log-add-inline {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--c-text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(231, 248, 229, 0.4);
+  border-radius: 4px;
+}
+.log-add { align-self: center; padding: 8px 18px; font-size: 13px; margin-top: 4px; }
+/* floats at the entry's middle-right (in the right gutter), out of the row flow */
+.log-add-victim {
+  position: absolute;
+  right: -104px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.log-add-inline { padding: 4px 10px; font-size: 12px; }
+.log-add:hover,
+.log-add-victim:hover,
+.log-add-inline:hover { border-color: var(--c-yellow); color: var(--c-yellow); }
+
+/* export: strip edit affordances and edit outlines (mirrors .unit-card.exporting) */
+.kill-log.exporting .edit-chrome { display: none !important; }
+.kill-log.exporting .editable { outline: none; }
+
+/* variant step of the log unit picker (inside .picker-dialog) */
+.log-variant-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #10151a;
+  border: 1px solid #2a323c;
+  border-radius: 4px;
+}
+.log-variant-preview .picker-icon-img { width: 96px; height: 42px; }
+.log-variant-preview-text { display: flex; flex-direction: column; gap: 2px; }
+.log-variant-preview-name { font-size: 15px; font-weight: 700; color: #e7f8e5; }
+.log-variant-preview-pts { font-size: 13px; color: #f4d42a; font-weight: 700; }
+.log-variant-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+.picker-dialog-actions button.primary {
+  background: #e8b23a;
+  border-color: #e8b23a;
+  color: #14181c;
+  font-weight: 600;
+}

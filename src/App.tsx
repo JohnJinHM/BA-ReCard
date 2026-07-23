@@ -6,19 +6,22 @@ import { ColorPanel } from './ui/ColorPanel'
 import { SavedCardsPanel } from './ui/SavedCardsPanel'
 import { CropDialog } from './ui/CropDialog'
 import { UnitCard } from './card/UnitCard'
-import { exportCardPng } from './export/exportPng'
+import { LogBoard } from './log/LogBoard'
+import { exportCardPng, exportLogPng } from './export/exportPng'
 import { t } from './ui/i18n'
 import './app.css'
 
 export default function App() {
-  const { db, loadError, card, compact, editMode, lang, pendingAction } = useAppStore()
+  const { db, loadError, card, compact, editMode, lang, view, pendingAction } = useAppStore()
   const load = useAppStore((s) => s.load)
   const confirmPending = useAppStore((s) => s.confirmPending)
   const cancelPending = useAppStore((s) => s.cancelPending)
   const setCompact = useAppStore((s) => s.setCompact)
   const setEditMode = useAppStore((s) => s.setEditMode)
+  const setView = useAppStore((s) => s.setView)
   const setLang = useAppStore((s) => s.setLang)
   const resetEdits = useAppStore((s) => s.resetEdits)
+  const resetLog = useAppStore((s) => s.resetLog)
   const updateCard = useAppStore((s) => s.updateCard)
   const saveCard = useAppStore((s) => s.saveCard)
 
@@ -30,14 +33,17 @@ export default function App() {
     void load()
   }, [load])
 
-  if (loadError) return <div className="app-error">Failed to load data: {loadError}</div>
-  if (!db) return <div className="app-loading">Loading unit database…</div>
+  if (loadError)
+    return <div className="app-error">{t(lang, 'loadFailed')}: {loadError}</div>
+  if (!db) return <div className="app-loading">{t(lang, 'loading')}</div>
+
+  const isLog = view === 'log'
 
   async function onExport() {
-    if (!card) return
     setExporting(true)
     try {
-      await exportCardPng(card.name)
+      if (isLog) await exportLogPng('kill-log')
+      else if (card) await exportCardPng(card.name)
     } finally {
       setExporting(false)
     }
@@ -54,8 +60,8 @@ export default function App() {
               href="https://github.com/JohnJinHM/BA-ReCard/"
               target="_blank"
               rel="noreferrer"
-              title="View source on GitHub"
-              aria-label="View source on GitHub"
+              title={t(lang, 'viewSource')}
+              aria-label={t(lang, 'viewSource')}
             >
               <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
                 <path
@@ -66,7 +72,7 @@ export default function App() {
             </a>
             <button
               className="lang-toggle"
-              title="UI language (cards always use in-game English)"
+              title={t(lang, 'langToggle')}
               onClick={() => void setLang(lang === 'eng' ? 'chi' : 'eng')}
             >
               {lang === 'eng' ? '中文' : 'EN'}
@@ -77,14 +83,29 @@ export default function App() {
       </aside>
 
       <main className="workspace">
-        {card ? (
+        {card || isLog ? (
           <>
             <div className="toolbar">
-              <button className={compact ? '' : 'active'} onClick={() => setCompact(false)}>
+              <button
+                className={!isLog && !compact ? 'active' : ''}
+                onClick={() => {
+                  setCompact(false)
+                  setView('card')
+                }}
+              >
                 {t(lang, 'expanded')}
               </button>
-              <button className={compact ? 'active' : ''} onClick={() => setCompact(true)}>
+              <button
+                className={!isLog && compact ? 'active' : ''}
+                onClick={() => {
+                  setCompact(true)
+                  setView('card')
+                }}
+              >
                 {t(lang, 'compact')}
+              </button>
+              <button className={isLog ? 'active' : ''} onClick={() => setView('log')}>
+                {t(lang, 'logs')}
               </button>
               <span className="toolbar-sep" />
               <button
@@ -93,27 +114,29 @@ export default function App() {
               >
                 {editMode ? t(lang, 'editing') : t(lang, 'edit')}
               </button>
-              <button onClick={() => fileInput.current?.click()}>{t(lang, 'portrait')}</button>
-              <button onClick={resetEdits}>{t(lang, 'reset')}</button>
+              {!isLog && (
+                <button onClick={() => fileInput.current?.click()}>{t(lang, 'portrait')}</button>
+              )}
+              <button onClick={isLog ? resetLog : resetEdits}>{t(lang, 'reset')}</button>
               <span className="toolbar-sep" />
-              <button onClick={saveCard}>{t(lang, 'save')}</button>
+              {!isLog && <button onClick={saveCard}>{t(lang, 'save')}</button>}
               <button className="primary" onClick={onExport} disabled={exporting}>
                 {exporting ? t(lang, 'exporting') : t(lang, 'exportPng')}
               </button>
             </div>
             <div className="card-stage">
-              <UnitCard card={card} />
+              {isLog ? <LogBoard /> : card && <UnitCard card={card} />}
             </div>
           </>
         ) : (
-          <div className="workspace-empty">Select a unit to build its card.</div>
+          <div className="workspace-empty">{t(lang, 'emptyWorkspace')}</div>
         )}
       </main>
 
       <aside className="sidebar right">
-        <VariantPanel />
+        {!isLog && <VariantPanel />}
         <ColorPanel />
-        <SavedCardsPanel />
+        {!isLog && <SavedCardsPanel />}
       </aside>
 
       <input

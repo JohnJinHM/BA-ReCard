@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react'
+import { useAppStore } from '../state/store'
+import { t } from './i18n'
 
 export interface PickerItem {
   /** identifier passed back to onPick */
@@ -26,6 +28,7 @@ interface Props {
  * a custom image. Used for weapon slots (weapon silhouettes) and tag icons.
  */
 export function PickerDialog({ title, items, iconClassName, onPick, onUpload, onClear, onCancel }: Props) {
+  const lang = useAppStore((s) => s.lang)
   const [query, setQuery] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -37,13 +40,13 @@ export function PickerDialog({ title, items, iconClassName, onPick, onUpload, on
       <div className="picker-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="picker-dialog-head">
           <h3>{title}</h3>
-          <button className="picker-dialog-close" onClick={onCancel} title="Close">
+          <button className="picker-dialog-close" onClick={onCancel} title={t(lang, 'close')}>
             ×
           </button>
         </div>
         <input
           className="picker-search"
-          placeholder="Search…"
+          placeholder={t(lang, 'search')}
           value={query}
           autoFocus
           onChange={(e) => setQuery(e.target.value)}
@@ -64,13 +67,13 @@ export function PickerDialog({ title, items, iconClassName, onPick, onUpload, on
               <span className="picker-icon-label">{it.label}</span>
             </button>
           ))}
-          {filtered.length === 0 && <div className="picker-empty">No matches.</div>}
+          {filtered.length === 0 && <div className="picker-empty">{t(lang, 'noMatches')}</div>}
         </div>
         <div className="picker-dialog-actions">
-          <button onClick={() => fileInput.current?.click()}>Upload image…</button>
-          {onClear && <button onClick={onClear}>Clear</button>}
+          <button onClick={() => fileInput.current?.click()}>{t(lang, 'uploadImage')}</button>
+          {onClear && <button onClick={onClear}>{t(lang, 'clear')}</button>}
           <span style={{ flex: 1 }} />
-          <button onClick={onCancel}>Cancel</button>
+          <button onClick={onCancel}>{t(lang, 'cancel')}</button>
         </div>
         <input
           ref={fileInput}

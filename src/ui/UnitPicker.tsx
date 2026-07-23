@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react'
 import { useAppStore } from '../state/store'
 import { thumbnailUrl } from '../assets'
 import { UnitCategoryLocKey, UnitCategoryType } from '../data/enums'
+import { t } from './i18n'
 
 /** Arsenal-style unit browser: category tabs + searchable thumbnail grid. */
 export function UnitPicker() {
   const db = useAppStore((s) => s.db)
+  const lang = useAppStore((s) => s.lang)
   const selectedUnitId = useAppStore((s) => s.selectedUnitId)
   const selectUnit = useAppStore((s) => s.selectUnit)
   const guardEdits = useAppStore((s) => s.guardEdits)
@@ -37,7 +39,7 @@ export function UnitPicker() {
     <div className="unit-picker">
       <input
         className="picker-search"
-        placeholder="Search units…"
+        placeholder={t(lang, 'searchUnits')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />

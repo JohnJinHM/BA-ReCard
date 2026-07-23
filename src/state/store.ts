@@ -4,10 +4,14 @@ import { loadGameDb } from '../data/db'
 import type { VariantSelection } from '../data/resolve'
 import { resolveCard } from '../data/resolve'
 import type { CardModel } from '../card/model'
+import type { LogModel } from '../log/logModel'
+import { emptyLog, emptyLogEntry, logUnitFromCard } from '../log/logModel'
 import type { SavedCard } from './savedCards'
 import { loadSavedCards, newSavedCardId, persistSavedCards } from './savedCards'
 
 export type Lang = 'eng' | 'chi'
+/** which workspace is showing: the unit card, or the kill-log editor */
+export type View = 'card' | 'log'
 
 interface AppState {
   db: GameDb | null
@@ -19,6 +23,10 @@ interface AppState {
   selection: VariantSelection
   compact: boolean
   editMode: boolean
+  /** current workspace: unit card or kill-log editor */
+  view: View
+  /** the kill-log editor's model (edits live here, parallel to `card`) */
+  log: LogModel
   /** the card as displayed; starts as the resolved model, then absorbs edits */
   card: CardModel | null
   /** the displayed card has manual edits that a re-resolve would discard */
@@ -38,9 +46,17 @@ interface AppState {
   selectOption(modificationId: number, optionId: number): void
   setCompact(compact: boolean): void
   setEditMode(on: boolean): void
+  setView(view: View): void
   setColorTarget(key: string | null): void
   /** apply a partial or full replacement of the displayed card */
   updateCard(mutate: (card: CardModel) => void): void
+  /** mutate the kill-log model (mirrors updateCard for the log view) */
+  updateLog(mutate: (log: LogModel) => void): void
+  /** clear the kill log and re-seed it from the current card (if any) */
+  resetLog(): void
+  /** set/clear a text-color override on whichever model the view shows */
+  setColor(key: string, hex: string): void
+  clearColor(key: string): void
   resetEdits(): void
   /** snapshot the displayed card into the saved list (overwrites same name) */
   saveCard(): void
@@ -67,6 +83,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   compact: true, // the game opens cards in compact mode
 
   editMode: false,
+  view: 'card',
+  log: emptyLog(),
   card: null,
   dirty: false,
   colorTarget: null,
@@ -130,6 +148,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     set(on ? { editMode: true } : { editMode: false, colorTarget: null })
   },
 
+  setView(view) {
+    if (view === get().view) return
+    // Entering an empty log auto-seeds a first entry from the current card and
+    // opens edit mode so the user can build immediately.
+    if (view === 'log' && get().log.entries.length === 0) {
+      const { db, card } = get()
+      if (db && card)
+        set({ log: { entries: [emptyLogEntry(logUnitFromCard(db, card))] }, editMode: true })
+    }
+    set({ view, colorTarget: null })
+  },
+
   setColorTarget(key) {
     set({ colorTarget: key })
   },
@@ -140,6 +170,29 @@ export const useAppStore = create<AppState>((set, get) => ({
     const copy = structuredClone(card)
     mutate(copy)
     set({ card: copy, dirty: true })
+  },
+
+  updateLog(mutate) {
+    const copy = structuredClone(get().log)
+    mutate(copy)
+    set({ log: copy })
+  },
+
+  resetLog() {
+    const { db, card } = get()
+    const entries = db && card ? [emptyLogEntry(logUnitFromCard(db, card))] : []
+    set({ log: { entries }, colorTarget: null })
+  },
+
+  setColor(key, hex) {
+    if (get().view === 'log') get().updateLog((l) => void ((l.textColors ??= {})[key] = hex))
+    else get().updateCard((c) => void ((c.textColors ??= {})[key] = hex))
+  },
+
+  clearColor(key) {
+    if (get().view === 'log')
+      get().updateLog((l) => void (l.textColors && delete l.textColors[key]))
+    else get().updateCard((c) => void (c.textColors && delete c.textColors[key]))
   },
 
   resetEdits() {

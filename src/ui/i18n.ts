@@ -5,6 +5,7 @@ import type { Lang } from '../state/store'
 const STRINGS = {
   expanded: { eng: 'Expanded', chi: '详细' },
   compact: { eng: 'Compact', chi: '默认' },
+  logs: { eng: 'Logs', chi: '日志' },
   edit: { eng: 'Edit', chi: '编辑' },
   editing: { eng: 'Editing…', chi: '编辑中…' },
   portrait: { eng: 'Import...', chi: '导入图片…' },
@@ -43,6 +44,62 @@ const STRINGS = {
     eng: 'Click text on the card to recolor it.',
     chi: '点击卡片上的文字以更改颜色。',
   },
+  themeDefault: { eng: 'Theme default', chi: '主题默认色' },
+  pickColor: { eng: 'Pick color', chi: '选择颜色' },
+
+  // App chrome
+  loadFailed: { eng: 'Failed to load data', chi: '数据加载失败' },
+  loading: { eng: 'Loading unit database…', chi: '正在加载单位数据库…' },
+  viewSource: { eng: 'View source on GitHub', chi: '在 GitHub 查看源代码' },
+  langToggle: {
+    eng: 'UI language (cards always use in-game English)',
+    chi: '界面语言（卡片始终使用游戏内英文）',
+  },
+  emptyWorkspace: { eng: 'Select a unit to build its card.', chi: '选择一个单位以生成卡片。' },
+
+  // Unit picker / variant panel
+  searchUnits: { eng: 'Search units…', chi: '搜索单位…' },
+  variants: { eng: 'Variants', chi: '变体' },
+
+  // Icon picker dialog (weapons / ammo / tag icons)
+  close: { eng: 'Close', chi: '关闭' },
+  search: { eng: 'Search…', chi: '搜索…' },
+  noMatches: { eng: 'No matches.', chi: '无匹配结果。' },
+  uploadImage: { eng: 'Upload image…', chi: '上传图片…' },
+  clear: { eng: 'Clear', chi: '清除' },
+  selectWeapon: { eng: 'Select weapon', chi: '选择武器' },
+  selectAmmo: { eng: 'Select ammo', chi: '选择弹药' },
+  selectTagIcon: { eng: 'Select tag icon', chi: '选择标签图标' },
+
+  // Card edit chrome
+  remove: { eng: 'Remove', chi: '移除' },
+  addWeapon: { eng: '+ Add weapon', chi: '+ 添加武器' },
+  addWeaponShort: { eng: '+ Add', chi: '+ 添加' },
+  addAmmo: { eng: '+ Add ammo', chi: '+ 添加弹药' },
+  changeWeapon: { eng: 'Change weapon / icon', chi: '更换武器 / 图标' },
+  changeAmmo: { eng: 'Change ammo / icon', chi: '更换弹药 / 图标' },
+  changeTag: { eng: 'Change or clear tag icon', chi: '更换或清除标签图标' },
+  addTagIcon: { eng: 'Add tag icon', chi: '添加标签图标' },
+
+  // Crop dialog
+  usePortrait: { eng: 'Use portrait', chi: '使用此立绘' },
+
+  // Kill-log board
+  emptyLog: { eng: 'Enable Edit to build a kill log.', chi: '开启「编辑」以创建击杀日志。' },
+  addKill: { eng: '+ Add kill', chi: '+ 添加击杀' },
+  addVictim: { eng: '+ Add victim', chi: '+ 添加受害者' },
+  addVictimInline: { eng: '+ victim', chi: '+ 受害者' },
+  removeKill: { eng: 'Remove kill', chi: '移除击杀' },
+  removeVictim: { eng: 'Remove victim', chi: '移除受害者' },
+  chooseUnitUpload: { eng: 'Choose unit / upload icon', chi: '选择单位 / 上传图标' },
+
+  // Log unit picker
+  selectUnit: { eng: 'Select unit', chi: '选择单位' },
+  chooseVariant: { eng: 'Choose variant', chi: '选择变体' },
+  uploadIcon: { eng: 'Upload icon…', chi: '上传图标…' },
+  clearIcon: { eng: 'Clear icon', chi: '清除图标' },
+  back: { eng: '← Back', chi: '← 返回' },
+  useUnit: { eng: 'Use unit', chi: '使用此单位' },
 } satisfies Record<string, Record<Lang, string>>
 
 export type UiStringKey = keyof typeof STRINGS

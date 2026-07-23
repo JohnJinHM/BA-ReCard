@@ -37,29 +37,30 @@ export function parseColorInput(text: string): string | null {
  */
 export function ColorPanel() {
   const editMode = useAppStore((s) => s.editMode)
+  const view = useAppStore((s) => s.view)
   const card = useAppStore((s) => s.card)
+  const logColors = useAppStore((s) => s.log.textColors)
   const lang = useAppStore((s) => s.lang)
   const target = useAppStore((s) => s.colorTarget)
-  const updateCard = useAppStore((s) => s.updateCard)
+  const setColor = useAppStore((s) => s.setColor)
+  const clearColor = useAppStore((s) => s.clearColor)
 
-  const color = target ? card?.textColors?.[target] : undefined
+  const colors = view === 'log' ? logColors : card?.textColors
+  const color = target ? colors?.[target] : undefined
   const [hexText, setHexText] = useState(color ?? '')
   useEffect(() => setHexText(color ?? ''), [color, target])
 
-  if (!editMode || !card) return null
+  // available whenever there's something to recolor: a card, or the log view
+  if (!editMode || (view === 'card' && !card)) return null
 
   function apply(hex: string) {
     if (!target) return
-    updateCard((c) => {
-      ;(c.textColors ??= {})[target] = hex
-    })
+    setColor(target, hex)
   }
 
   function clear() {
     if (!target) return
-    updateCard((c) => {
-      if (c.textColors) delete c.textColors[target]
-    })
+    clearColor(target)
   }
 
   function commitHexText() {
@@ -87,7 +88,7 @@ export function ColorPanel() {
         ))}
         <button
           className="color-swatch clear"
-          title="Theme default"
+          title={t(lang, 'themeDefault')}
           disabled={disabled}
           onClick={clear}
         >
@@ -99,7 +100,7 @@ export function ColorPanel() {
           className="color-native-input"
           type="color"
           value={color ?? '#e7f8e5'}
-          title="Pick color"
+          title={t(lang, 'pickColor')}
           disabled={disabled}
           onChange={(e) => apply(e.target.value)}
         />

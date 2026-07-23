@@ -73,5 +73,6 @@ export function portraitUrl(name: string | null): string | null {
 /** Unit thumbnails (Arsenal grid labels), e.g. "US_HIMARS-Label" (416×216). */
 export function thumbnailUrl(name: string | null): string | null {
   if (!name) return null
+  if (passthrough(name)) return name
   return `${BASE}assets/thumbnails/${enc(name)}.png`
 }

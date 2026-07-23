@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react'
 import Cropper from 'react-easy-crop'
 import type { Area } from 'react-easy-crop'
+import { useAppStore } from '../state/store'
+import { t } from './i18n'
 
 // In-game portraits are 816×550 (docs/extracted/ASSETS.md); uploads are
 // cropped to that aspect and resampled to the same size.
@@ -14,6 +16,7 @@ interface Props {
 }
 
 export function CropDialog({ imageSrc, onCancel, onDone }: Props) {
+  const lang = useAppStore((s) => s.lang)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [area, setArea] = useState<Area | null>(null)
@@ -67,9 +70,9 @@ export function CropDialog({ imageSrc, onCancel, onDone }: Props) {
             value={zoom}
             onChange={(e) => setZoom(Number(e.target.value))}
           />
-          <button onClick={onCancel}>Cancel</button>
+          <button onClick={onCancel}>{t(lang, 'cancel')}</button>
           <button className="primary" onClick={confirm} disabled={!area}>
-            Use portrait
+            {t(lang, 'usePortrait')}
           </button>
         </div>
       </div>

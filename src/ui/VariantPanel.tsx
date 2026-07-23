@@ -1,4 +1,5 @@
 import { useAppStore } from '../state/store'
+import { t } from './i18n'
 
 /** Prettify unresolved localization keys like "Custom_Option_Default". */
 function pretty(s: string): string {
@@ -8,6 +9,7 @@ function pretty(s: string): string {
 /** Modification → option selectors for the selected unit (in-game variants). */
 export function VariantPanel() {
   const db = useAppStore((s) => s.db)
+  const lang = useAppStore((s) => s.lang)
   const unitId = useAppStore((s) => s.selectedUnitId)
   const selection = useAppStore((s) => s.selection)
   const selectOption = useAppStore((s) => s.selectOption)
@@ -21,7 +23,7 @@ export function VariantPanel() {
 
   return (
     <div className="variant-panel">
-      <h3>Variants</h3>
+      <h3>{t(lang, 'variants')}</h3>
       {mods.map((mod) => {
         const opts = [...(db.modificationOptions.get(mod.Id) ?? [])].sort(
           (a, b) => a.Order - b.Order,

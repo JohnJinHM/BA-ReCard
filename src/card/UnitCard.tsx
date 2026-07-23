@@ -7,6 +7,7 @@ import { useAppStore } from '../state/store'
 import { WeaponType, WeaponTypeLocKey } from '../data/enums'
 import { PickerDialog, type PickerItem } from '../ui/PickerDialog'
 import { TAG_ICON_NAMES, prettyIconName } from '../ui/iconLibrary'
+import { t } from '../ui/i18n'
 import './card.css'
 
 // Layout mirrors the game's "Unit Info Card" prefab: 408x710, top hero bar
@@ -114,10 +115,11 @@ function TagPill({ value, colorKey, onChange }: {
 
 /** Small "×" button to remove a slot (edit mode only). */
 function RemoveBtn({ onClick, className }: { onClick(): void; className?: string }) {
+  const lang = useAppStore((s) => s.lang)
   return (
     <button
       className={`slot-remove edit-chrome ${className ?? ''}`}
-      title="Remove"
+      title={t(lang, 'remove')}
       onClick={(e) => {
         e.stopPropagation()
         onClick()
@@ -132,6 +134,7 @@ export function UnitCard({ card }: { card: CardModel }) {
   const compact = useAppStore((s) => s.compact)
   const editMode = useAppStore((s) => s.editMode)
   const db = useAppStore((s) => s.db)
+  const lang = useAppStore((s) => s.lang)
   const update = useAppStore((s) => s.updateCard)
   const [selectedWeapon, setSelectedWeapon] = useState(0)
   const weaponIdx = Math.min(selectedWeapon, card.weapons.length - 1)
@@ -268,7 +271,7 @@ export function UnitCard({ card }: { card: CardModel }) {
           editMode ? (
             <div className="bottom-empty-bar">
               <button className="add-weapon-btn edit-chrome" onClick={slots.addWeapon}>
-                + Add weapon
+                {t(lang, 'addWeapon')}
               </button>
             </div>
           ) : (
@@ -295,7 +298,7 @@ export function UnitCard({ card }: { card: CardModel }) {
                     {editMode ? (
                       <button
                         className="weapon-icon-btn"
-                        title="Change weapon / icon"
+                        title={t(lang, 'changeWeapon')}
                         onClick={(e) => {
                           e.stopPropagation()
                           slots.openWeaponPicker(i)
@@ -326,7 +329,7 @@ export function UnitCard({ card }: { card: CardModel }) {
               ))}
               {editMode && (
                 <button className="add-weapon-btn list edit-chrome" onClick={slots.addWeapon}>
-                  + Add
+                  {t(lang, 'addWeaponShort')}
                 </button>
               )}
             </div>
@@ -338,7 +341,7 @@ export function UnitCard({ card }: { card: CardModel }) {
 
       {picker?.kind === 'weapon' && (
         <PickerDialog
-          title="Select weapon"
+          title={t(lang, 'selectWeapon')}
           items={weaponItems}
           iconClassName="mirror"
           onPick={pickWeapon}
@@ -348,7 +351,7 @@ export function UnitCard({ card }: { card: CardModel }) {
       )}
       {picker?.kind === 'ammo' && (
         <PickerDialog
-          title="Select ammo"
+          title={t(lang, 'selectAmmo')}
           items={ammoItems}
           onPick={pickAmmo}
           onUpload={uploadAmmo}
@@ -357,7 +360,7 @@ export function UnitCard({ card }: { card: CardModel }) {
       )}
       {picker?.kind === 'tag' && (
         <PickerDialog
-          title="Select tag icon"
+          title={t(lang, 'selectTagIcon')}
           items={tagItems}
           onPick={(key) => {
             setTag(picker.index, key, prettyIconName(key))
@@ -381,6 +384,7 @@ export function UnitCard({ card }: { card: CardModel }) {
 function TopInfoBar({ card }: { card: CardModel }) {
   const update = useAppStore((s) => s.updateCard)
   const editMode = useAppStore((s) => s.editMode)
+  const lang = useAppStore((s) => s.lang)
   const slots = useSlots()
   // The right column holds at most TAG_SLOTS icons total; resolved abilities
   // take priority and the editable tag slots fill only the room that remains.
@@ -437,20 +441,20 @@ function TopInfoBar({ card }: { card: CardModel }) {
           <div className="tags-col">
             {editMode
               ? Array.from({ length: tagCapacity }, (_, i) => {
-                  const t = card.tags[i]
-                  if (t?.icon)
+                  const tag = card.tags[i]
+                  if (tag?.icon)
                     return (
-                      <span className="tag-item" key={`t${i}`} title={t.name}>
+                      <span className="tag-item" key={`t${i}`} title={tag.name}>
                         <button
                           className="tag-edit-btn"
-                          title="Change or clear tag icon"
+                          title={t(lang, 'changeTag')}
                           onClick={() => slots.openTagPicker(i)}
                         >
-                          <Img className="tag-icon" src={iconUrl(t.icon)} alt={t.name} />
+                          <Img className="tag-icon" src={iconUrl(tag.icon)} alt={tag.name} />
                           <span className="tag-edit-hint edit-chrome">✎</span>
                         </button>
                         <TagPill
-                          value={t.detail}
+                          value={tag.detail}
                           colorKey={`tag.${i}.detail`}
                           onChange={(v) => update((c) => void (c.tags[i] && (c.tags[i]!.detail = v)))}
                         />
@@ -460,7 +464,7 @@ function TopInfoBar({ card }: { card: CardModel }) {
                     <button
                       className="tag-item tag-placeholder edit-chrome"
                       key={`t${i}`}
-                      title="Add tag icon"
+                      title={t(lang, 'addTagIcon')}
                       onClick={() => slots.openTagPicker(i)}
                     >
                       +
@@ -553,6 +557,7 @@ function ArmorBlock({ card, facing, className, layout }: {
 function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number }) {
   const update = useAppStore((s) => s.updateCard)
   const editMode = useAppStore((s) => s.editMode)
+  const lang = useAppStore((s) => s.lang)
   const slots = useSlots()
   return (
     <div className="weapon-detail">
@@ -596,7 +601,7 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
               {editMode ? (
                 <button
                   className="weapon-icon-btn"
-                  title="Change ammo / icon"
+                  title={t(lang, 'changeAmmo')}
                   onClick={() => slots.openAmmoPicker(index, ai)}
                 >
                   <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
@@ -653,7 +658,7 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
         ))}
         {editMode && (
           <button className="add-weapon-btn ammo edit-chrome" onClick={() => slots.addAmmo(index)}>
-            + Add ammo
+            {t(lang, 'addAmmo')}
           </button>
         )}
       </div>
@@ -664,6 +669,7 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
 function BottomCompactBar({ card }: { card: CardModel }) {
   const update = useAppStore((s) => s.updateCard)
   const editMode = useAppStore((s) => s.editMode)
+  const lang = useAppStore((s) => s.lang)
   const slots = useSlots()
   return (
     <div className="bottom-compact-bar">
@@ -687,7 +693,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
             {editMode ? (
               <button
                 className="weapon-icon-btn"
-                title="Change weapon / icon"
+                title={t(lang, 'changeWeapon')}
                 onClick={() => slots.openWeaponPicker(wi)}
               >
                 <Img
@@ -718,7 +724,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
                   {editMode ? (
                     <button
                       className="weapon-icon-btn ammo-icon-btn"
-                      title="Change ammo / icon"
+                      title={t(lang, 'changeAmmo')}
                       onClick={() => slots.openAmmoPicker(wi, ai)}
                     >
                       <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
@@ -767,7 +773,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
             ))}
             {editMode && (
               <button className="add-weapon-btn ammo edit-chrome" onClick={() => slots.addAmmo(wi)}>
-                + Add ammo
+                {t(lang, 'addAmmo')}
               </button>
             )}
           </div>
@@ -775,7 +781,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
       ))}
       {editMode && (
         <button className="add-weapon-btn compact edit-chrome" onClick={slots.addWeapon}>
-          + Add weapon
+          {t(lang, 'addWeapon')}
         </button>
       )}
     </div>
