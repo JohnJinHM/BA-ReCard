@@ -43,7 +43,10 @@
 .log-row {
   position: relative;
   display: grid;
-  grid-template-columns: 401px 110px 95px 110px 1fr;
+  /* left zone == right zone so the two point columns sit symmetric about the
+     centre (balanced, not left-inclined). The right unit is left-aligned and
+     may spill past the (narrower) right zone toward the edge — see .log-name. */
+  grid-template-columns: 435px 110px 95px 110px 1fr;
   align-items: center;
   min-height: 54px;
 }
@@ -72,7 +75,9 @@
    left-aligned, so long names wrap and grow the row height (kept centered) */
 .log-unit { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .log-unit.left { grid-column: 1; justify-self: start; }
-.log-unit.right { grid-column: 5; justify-self: start; padding-left: 72px; }
+/* size to content and spill past the (narrower, balanced) right zone toward the
+   board edge, so the name wraps at its own max-width — not the zone's width */
+.log-unit.right { grid-column: 5; justify-self: start; padding-left: 72px; width: max-content; }
 
 .log-name {
   font-size: 25px;
@@ -81,11 +86,12 @@
   line-height: 1.15;
   overflow-wrap: break-word;
 }
-/* left & right share the same wrap width; names up to ~300px (past "A-10C
-   Thunderbolt II" = 270px) stay on one line, longer ones wrap and grow the row.
-   The board width reserves enough right-zone room to fit this without clipping. */
+/* names up to ~"A-10C Thunderbolt II" (270px) stay on one line, longer ones
+   wrap and grow the row. The right unit sits in the balanced (narrower) right
+   zone, so its text spills past the background bar toward the board edge; its
+   cap is bounded by the export box, the left's by its wider zone. */
 .log-unit.left .log-name { color: var(--log-blue); max-width: 298px; }
-.log-unit.right .log-name { color: var(--log-red); max-width: 298px; }
+.log-unit.right .log-name { color: var(--log-red); max-width: 280px; }
 
 /* points, centered in their fixed tracks so rows line up */
 .log-pts-col { display: flex; align-items: center; justify-content: center; }
