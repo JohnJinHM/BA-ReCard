@@ -9,7 +9,7 @@
   --c-yellow: #f4d42a;
   --c-text: #e7f8e5;
 
-  width: 1180px;
+  width: 1224px;
   /* never shrink inside the (flex) stage — shrinking collapses the fixed
      tracks and corrupts the export in narrow viewports */
   flex: none;
@@ -21,7 +21,7 @@
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 18px; /* between kill entries (~1.5× the old spacing) */
+  gap: 48px;
   box-sizing: border-box;
 }
 .kill-log * { box-sizing: border-box; }
@@ -81,10 +81,11 @@
   line-height: 1.15;
   overflow-wrap: break-word;
 }
-/* max-widths sized so names up to ~"A-10C Thunderbolt II" (270px) stay on one
-   line and only longer ones wrap (rows then grow taller — see .log-row) */
+/* left & right share the same wrap width; names up to ~300px (past "A-10C
+   Thunderbolt II" = 270px) stay on one line, longer ones wrap and grow the row.
+   The board width reserves enough right-zone room to fit this without clipping. */
 .log-unit.left .log-name { color: var(--log-blue); max-width: 298px; }
-.log-unit.right .log-name { color: var(--log-red); max-width: 248px; }
+.log-unit.right .log-name { color: var(--log-red); max-width: 298px; }
 
 /* points, centered in their fixed tracks so rows line up */
 .log-pts-col { display: flex; align-items: center; justify-content: center; }
