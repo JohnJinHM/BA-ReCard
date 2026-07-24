@@ -254,6 +254,25 @@ function applyOption(db: GameDb, loadout: ResolvedLoadout, opt: OptionRow): Reso
   return out
 }
 
+/** Every name a unit can present across its variants — the base name plus any
+ *  rename, concatenation, or unit-replacement an option produces. Lets unit
+ *  search match variant names (searching "Jegeris" finds "Eesti Scouts"). */
+export function unitSearchNames(db: GameDb, unit: UnitRow): string[] {
+  const base = unit.HUDName ?? unit.Name ?? ''
+  const names = new Set<string>()
+  if (base) names.add(base)
+  for (const mod of db.unitModifications.get(unit.Id) ?? [])
+    for (const opt of db.modificationOptions.get(mod.Id) ?? []) {
+      if (opt.ReplaceUnitName) names.add(db.cardLoc(opt.ReplaceUnitName))
+      if (opt.ConcatenateWithUnitName) names.add(`${base}${db.cardLoc(opt.ConcatenateWithUnitName)}`)
+      if (opt.ReplaceUnitId) {
+        const rep = db.units.get(opt.ReplaceUnitId)
+        if (rep) names.add(rep.HUDName ?? rep.Name ?? '')
+      }
+    }
+  return [...names].filter(Boolean)
+}
+
 /** Resolve a unit + variant selection into the full card view model. */
 export function resolveCard(
   db: GameDb,

@@ -17,7 +17,7 @@ export async function exportNodePng(nodeId: string, fileName: string, fallback: 
   }
   const a = document.createElement('a')
   a.href = dataUrl
-  a.download = `${fileName.replace(/[^\w\- ]+/g, '').trim() || fallback}.png`
+  a.download = `${fileName.replace(/[^\w\-= ]+/g, '').trim() || fallback}.png`
   a.click()
 }
 

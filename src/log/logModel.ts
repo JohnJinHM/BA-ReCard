@@ -80,6 +80,24 @@ export function emptyLog(): LogModel {
   return { entries: [] }
 }
 
+/** Filename for an exported kill log: each entry becomes "killer=victim-victim"
+ *  (mirroring the feed's left=rights), entries joined with "_". Pristine victim
+ *  slots are skipped like in the export. Empty when the log has no entries; the
+ *  exporter then falls back to a default name. Capped so it stays a valid path. */
+export function logFileName(entries: LogEntry[]): string {
+  const parts = entries
+    .map((e) => {
+      const victims = e.rights
+        .filter((r) => !isPristineVictim(r))
+        .map((r) => r.name.trim())
+        .filter(Boolean)
+      const killer = e.left.name.trim()
+      return victims.length ? `${killer}=${victims.join('-')}` : killer
+    })
+    .filter(Boolean)
+  return parts.join('_').slice(0, 120)
+}
+
 /** Drop a removed unit's color overrides (keyed by its stable id). */
 export function removeUnitColors(log: LogModel, unitId: string) {
   if (!log.textColors) return

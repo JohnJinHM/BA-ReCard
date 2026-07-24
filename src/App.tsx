@@ -7,12 +7,13 @@ import { SavedCardsPanel } from './ui/SavedCardsPanel'
 import { CropDialog } from './ui/CropDialog'
 import { UnitCard } from './card/UnitCard'
 import { LogBoard } from './log/LogBoard'
+import { logFileName } from './log/logModel'
 import { exportCardPng, exportLogPng } from './export/exportPng'
 import { t } from './ui/i18n'
 import './app.css'
 
 export default function App() {
-  const { db, loadError, card, compact, editMode, lang, view, pendingAction } = useAppStore()
+  const { db, loadError, card, compact, editMode, lang, view, log, pendingAction } = useAppStore()
   const load = useAppStore((s) => s.load)
   const confirmPending = useAppStore((s) => s.confirmPending)
   const cancelPending = useAppStore((s) => s.cancelPending)
@@ -42,7 +43,7 @@ export default function App() {
   async function onExport() {
     setExporting(true)
     try {
-      if (isLog) await exportLogPng('kill-log')
+      if (isLog) await exportLogPng(logFileName(log.entries))
       else if (card) await exportCardPng(card.name)
     } finally {
       setExporting(false)

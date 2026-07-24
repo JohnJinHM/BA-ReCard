@@ -20,7 +20,7 @@ export function UnitPicker() {
     return db
       .armoryUnits()
       .filter((u) => (q ? true : u.CategoryType === category))
-      .filter((u) => !q || (u.HUDName ?? u.Name ?? '').toLowerCase().includes(q))
+      .filter((u) => !q || db.unitSearchText(u.Id).includes(q))
       .sort((a, b) => (a.HUDName ?? '').localeCompare(b.HUDName ?? ''))
   }, [db, category, query])
 

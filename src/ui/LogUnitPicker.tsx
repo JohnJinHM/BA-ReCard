@@ -31,7 +31,7 @@ export function LogUnitPicker({ onPick, onUpload, onClear, onCancel }: Props) {
     const q = query.trim().toLowerCase()
     return db
       .armoryUnits()
-      .filter((u) => !q || (u.HUDName ?? u.Name ?? '').toLowerCase().includes(q))
+      .filter((u) => !q || db.unitSearchText(u.Id).includes(q))
       .sort((a, b) => (a.HUDName ?? '').localeCompare(b.HUDName ?? ''))
   }, [db, query])
 

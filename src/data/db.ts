@@ -12,6 +12,7 @@ import type {
   ModificationRow,
   OptionRow,
 } from './types'
+import { unitSearchNames } from './resolve'
 
 const TABLE_NAMES = [
   'Units',
@@ -103,6 +104,7 @@ export class GameDb {
 
   private locLower: Map<string, string>
   private engLower: Map<string, string>
+  private searchText?: Map<number, string>
 
   /** UI-language translation (case-insensitive); falls back to the key. */
   loc(key: string | null | undefined): string {
@@ -143,6 +145,18 @@ export class GameDb {
     return this.tables.Units.filter(
       (u) => u.DisplayInArmory && !u.IsUnitModification && u.Role !== 0,
     )
+  }
+
+  /** Lowercased searchable text per armory unit — its name plus every variant
+   *  name — so search matches renamed variants (e.g. "Jegeris" → Eesti Scouts).
+   *  Built lazily and cached on first use. */
+  unitSearchText(unitId: number): string {
+    if (!this.searchText) {
+      this.searchText = new Map()
+      for (const u of this.armoryUnits())
+        this.searchText.set(u.Id, unitSearchNames(this, u).join('\n').toLowerCase())
+    }
+    return this.searchText.get(unitId) ?? ''
   }
 }
 
