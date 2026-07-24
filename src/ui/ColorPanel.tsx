@@ -30,10 +30,10 @@ export function parseColorInput(text: string): string | null {
 }
 
 /**
- * Text-color editor fixed in the right sidebar (under Variants): theme
- * swatches, the browser's color picker, and a hex/RGB entry. It recolors the
- * last-focused editable text on the card (store.colorTarget), which stays
- * targeted while clicking around this panel.
+ * Color editor fixed in the right sidebar (under Variants): theme swatches,
+ * the browser's color picker, and a hex/RGB entry. It recolors the last-touched
+ * editable text or icon (store.colorTarget), which stays targeted while
+ * clicking around this panel.
  */
 export function ColorPanel() {
   const editMode = useAppStore((s) => s.editMode)
@@ -73,8 +73,8 @@ export function ColorPanel() {
 
   return (
     <div className={`color-panel ${disabled ? 'disabled' : ''}`}>
-      <h3>{t(lang, 'textColor')}</h3>
-      {disabled && <div className="color-panel-hint">{t(lang, 'textColorHint')}</div>}
+      <h3>{t(lang, 'colorTitle')}</h3>
+      {disabled && <div className="color-panel-hint">{t(lang, 'colorHint')}</div>}
       <div className="color-swatches">
         {THEME_SWATCHES.map((s) => (
           <button

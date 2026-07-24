@@ -23,6 +23,7 @@ export default function App() {
   const setLang = useAppStore((s) => s.setLang)
   const resetEdits = useAppStore((s) => s.resetEdits)
   const resetLog = useAppStore((s) => s.resetLog)
+  const swapLogSides = useAppStore((s) => s.swapLogSides)
   const updateCard = useAppStore((s) => s.updateCard)
   const saveCard = useAppStore((s) => s.saveCard)
 
@@ -117,6 +118,15 @@ export default function App() {
               </button>
               {!isLog && (
                 <button onClick={() => fileInput.current?.click()}>{t(lang, 'portrait')}</button>
+              )}
+              {isLog && (
+                <button
+                  className={log.swapped ? 'active' : ''}
+                  title={t(lang, 'swapSidesHint')}
+                  onClick={swapLogSides}
+                >
+                  {t(lang, 'swapSides')}
+                </button>
               )}
               <button onClick={isLog ? resetLog : resetEdits}>{t(lang, 'reset')}</button>
               <span className="toolbar-sep" />

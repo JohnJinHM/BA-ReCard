@@ -1,10 +1,11 @@
 import { createContext, useContext, useMemo, useState } from 'react'
-import type { CardModel, WeaponModel } from './model'
+import type { AmmoModel, CardModel, WeaponModel } from './model'
 import { emptyWeapon, emptyAmmo, emptyTag, removeIndexedColors } from './model'
 import { EditableText } from './EditableText'
 import { ammoIconUrl, chromeUrl, iconUrl, isUploadedImage, portraitUrl, weaponIconUrl } from '../assets'
 import { useAppStore } from '../state/store'
 import { WeaponType, WeaponTypeLocKey } from '../data/enums'
+import { ColorableIcon } from '../ui/ColorableIcon'
 import { PickerDialog, type PickerItem } from '../ui/PickerDialog'
 import { TAG_ICON_NAMES, prettyIconName } from '../ui/iconLibrary'
 import { t } from '../ui/i18n'
@@ -27,35 +28,6 @@ function Img({ src, className, alt, style }: {
     return <span className={`${className ?? ''} img-missing`} title={alt} />
   return (
     <img src={src} className={className} alt={alt ?? ''} style={style} onError={() => setFailedSrc(src)} />
-  )
-}
-
-/** Monochrome sprite tinted via CSS mask (game tints these at runtime too). */
-function TintIcon({ src, color, className, title }: {
-  src: string | null
-  color: string
-  className?: string
-  title?: string
-}) {
-  if (!src) return <span className={`${className ?? ''} img-missing`} />
-  const mask = `url("${src}")`
-  return (
-    <span
-      className={className}
-      title={title}
-      style={{
-        display: 'inline-block',
-        backgroundColor: color,
-        WebkitMaskImage: mask,
-        WebkitMaskSize: 'contain',
-        WebkitMaskRepeat: 'no-repeat',
-        WebkitMaskPosition: 'center',
-        maskImage: mask,
-        maskSize: 'contain',
-        maskRepeat: 'no-repeat',
-        maskPosition: 'center',
-      }}
-    />
   )
 }
 
@@ -102,7 +74,9 @@ function TagPill({ value, colorKey, onChange }: {
   onChange(v: string): void
 }) {
   const editMode = useAppStore((s) => s.editMode)
-  if (!editMode) return value ? <span className="tag-pill">{value}</span> : null
+  // empty pills only exist as edit-mode placeholders; EditableText renders the
+  // filled ones in both modes so a recolored pill keeps its color on export
+  if (!editMode && !value) return null
   return (
     <EditableText
       className={`tag-pill ${value ? '' : 'empty'}`}
@@ -110,6 +84,70 @@ function TagPill({ value, colorKey, onChange }: {
       colorKey={colorKey}
       onChange={onChange}
     />
+  )
+}
+
+/** Weapon silhouette (list or compact row), wrapped in its picker while
+ *  editing. Recolorable like any icon — the picker click still gets through. */
+function WeaponIcon({ weapon, index, className }: {
+  weapon: WeaponModel
+  index: number
+  className: string
+}) {
+  const editMode = useAppStore((s) => s.editMode)
+  const lang = useAppStore((s) => s.lang)
+  const slots = useSlots()
+  const icon = (
+    <ColorableIcon
+      className={`${className} ${isUploadedImage(weapon.icon) ? 'no-flip' : ''}`}
+      src={weaponIconUrl(weapon.icon)}
+      alt={weapon.name}
+      colorKey={`weapon.${index}.icon`}
+    />
+  )
+  if (!editMode) return icon
+  return (
+    <button
+      className="weapon-icon-btn"
+      title={t(lang, 'changeWeapon')}
+      onClick={(e) => {
+        // the expanded list wraps this in a "select weapon" row
+        e.stopPropagation()
+        slots.openWeaponPicker(index)
+      }}
+    >
+      {icon}
+    </button>
+  )
+}
+
+/** Ammo silhouette, wrapped in its picker while editing. */
+function AmmoIcon({ ammo, weaponIndex, ammoIndex, btnClassName }: {
+  ammo: AmmoModel
+  weaponIndex: number
+  ammoIndex: number
+  btnClassName?: string
+}) {
+  const editMode = useAppStore((s) => s.editMode)
+  const lang = useAppStore((s) => s.lang)
+  const slots = useSlots()
+  const icon = (
+    <ColorableIcon
+      className="ammo-image"
+      src={ammoIconUrl(ammo.icon)}
+      alt={ammo.name}
+      colorKey={`weapon.${weaponIndex}.ammo.${ammoIndex}.icon`}
+    />
+  )
+  if (!editMode) return icon
+  return (
+    <button
+      className={`weapon-icon-btn ${btnClassName ?? ''}`}
+      title={t(lang, 'changeAmmo')}
+      onClick={() => slots.openAmmoPicker(weaponIndex, ammoIndex)}
+    >
+      {icon}
+    </button>
   )
 }
 
@@ -295,28 +333,7 @@ export function UnitCard({ card }: { card: CardModel }) {
                       value={w.count}
                       onChange={(v) => update((c) => void (c.weapons[i]!.count = v))}
                     />
-                    {editMode ? (
-                      <button
-                        className="weapon-icon-btn"
-                        title={t(lang, 'changeWeapon')}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          slots.openWeaponPicker(i)
-                        }}
-                      >
-                        <Img
-                          className={`weapon-list-icon ${isUploadedImage(w.icon) ? 'no-flip' : ''}`}
-                          src={weaponIconUrl(w.icon)}
-                          alt={w.name}
-                        />
-                      </button>
-                    ) : (
-                      <Img
-                        className={`weapon-list-icon ${isUploadedImage(w.icon) ? 'no-flip' : ''}`}
-                        src={weaponIconUrl(w.icon)}
-                        alt={w.name}
-                      />
-                    )}
+                    <WeaponIcon weapon={w} index={i} className="weapon-list-icon" />
                     <EditableText
                       className="weapon-list-name"
                       value={w.name}
@@ -390,7 +407,12 @@ function TopInfoBar({ card }: { card: CardModel }) {
   // take priority and the editable tag slots fill only the room that remains.
   const abilities = card.abilities
   const tagCapacity = Math.max(0, TAG_SLOTS - abilities.length)
-  const shownTags = card.tags.filter((t) => t.icon).slice(0, tagCapacity)
+  // keep each tag's slot index: color overrides are keyed by it, so filtering
+  // for view mode must not renumber them out from under the edited colors
+  const shownTags = card.tags
+    .map((tag, index) => ({ tag, index }))
+    .filter(({ tag }) => tag.icon)
+    .slice(0, tagCapacity)
   const showTagsCol = abilities.length > 0 || shownTags.length > 0 || (editMode && tagCapacity > 0)
   return (
     <div className="top-info-bar">
@@ -414,22 +436,30 @@ function TopInfoBar({ card }: { card: CardModel }) {
               colorKey="cost"
               onChange={(v) => update((c) => void (c.cost = v))}
             />
-            <TintIcon className="points-icon" src={iconUrl('Points Icon')} color="#f4d42a" title="points" />
+            <ColorableIcon
+              className="points-icon"
+              src={iconUrl('Points Icon')}
+              colorKey="points.icon"
+              tint="#f4d42a"
+              title="points"
+            />
           </div>
         </div>
 
         {card.armorOverlay && card.armor && (
           <div className="armor-type-icons">
-            <TintIcon
+            <ColorableIcon
               className="armor-type-icon"
               src={iconUrl('Kinetic Armor Icon')}
-              color="#e7f8e5"
+              colorKey="armorType.kin.icon"
+              tint="#e7f8e5"
               title="Kinetic armor"
             />
-            <TintIcon
+            <ColorableIcon
               className="armor-type-icon"
               src={iconUrl('HEAT Armor Icon')}
-              color="#f66b06"
+              colorKey="armorType.heat.icon"
+              tint="#f66b06"
               title="HEAT armor"
             />
           </div>
@@ -450,7 +480,12 @@ function TopInfoBar({ card }: { card: CardModel }) {
                           title={t(lang, 'changeTag')}
                           onClick={() => slots.openTagPicker(i)}
                         >
-                          <Img className="tag-icon" src={iconUrl(tag.icon)} alt={tag.name} />
+                          <ColorableIcon
+                            className="tag-icon"
+                            src={iconUrl(tag.icon)}
+                            alt={tag.name}
+                            colorKey={`tag.${i}.icon`}
+                          />
                           <span className="tag-edit-hint edit-chrome">✎</span>
                         </button>
                         <TagPill
@@ -471,15 +506,29 @@ function TopInfoBar({ card }: { card: CardModel }) {
                     </button>
                   )
                 })
-              : shownTags.map((t, i) => (
-                  <span className="tag-item" key={`t${i}`} title={t.name}>
-                    <Img className="tag-icon" src={iconUrl(t.icon)} alt={t.name} />
-                    {t.detail && <span className="tag-pill">{t.detail}</span>}
+              : shownTags.map(({ tag, index }) => (
+                  <span className="tag-item" key={`t${index}`} title={tag.name}>
+                    <ColorableIcon
+                      className="tag-icon"
+                      src={iconUrl(tag.icon)}
+                      alt={tag.name}
+                      colorKey={`tag.${index}.icon`}
+                    />
+                    <TagPill
+                      value={tag.detail}
+                      colorKey={`tag.${index}.detail`}
+                      onChange={(v) => update((c) => void (c.tags[index] && (c.tags[index]!.detail = v)))}
+                    />
                   </span>
                 ))}
             {abilities.map((a, i) => (
               <span className="tag-item" key={`a${i}`} title={a.name}>
-                <Img className="tag-icon" src={iconUrl(a.icon)} alt={a.name} />
+                <ColorableIcon
+                  className="tag-icon"
+                  src={iconUrl(a.icon)}
+                  alt={a.name}
+                  colorKey={`ability.${i}.icon`}
+                />
                 <TagPill
                   value={a.detail}
                   colorKey={`ability.${i}.detail`}
@@ -494,7 +543,12 @@ function TopInfoBar({ card }: { card: CardModel }) {
         <div className="stats-strip">
           {card.stats.map((s, i) => (
             <div className="stat-item" key={i} title={s.label}>
-              <Img className="stat-icon" src={iconUrl(s.icon)} alt={s.label} />
+              <ColorableIcon
+                className="stat-icon"
+                src={iconUrl(s.icon)}
+                alt={s.label}
+                colorKey={`stat.${i}.icon`}
+              />
               <EditableText
                 className="stat-caption"
                 value={s.value}
@@ -570,7 +624,13 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
         />
         <div className="weapon-traits">
           {weapon.traits.map((t, i) => (
-            <Img key={i} className="trait-icon" src={iconUrl(t.icon)} alt={t.tooltip} />
+            <ColorableIcon
+              key={i}
+              className="trait-icon"
+              src={iconUrl(t.icon)}
+              alt={t.tooltip}
+              colorKey={`weapon.${index}.trait.${i}.icon`}
+            />
           ))}
         </div>
       </div>
@@ -598,17 +658,7 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
         {weapon.ammo.map((a, ai) => (
           <div className="ammo-info" key={ai}>
             <div className="ammo-top-row">
-              {editMode ? (
-                <button
-                  className="weapon-icon-btn"
-                  title={t(lang, 'changeAmmo')}
-                  onClick={() => slots.openAmmoPicker(index, ai)}
-                >
-                  <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
-                </button>
-              ) : (
-                <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
-              )}
+              <AmmoIcon ammo={a} weaponIndex={index} ammoIndex={ai} />
               <EditableText
                 className="ammo-title"
                 value={a.name}
@@ -628,7 +678,13 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
             {a.traits.length > 0 && (
               <div className="ammo-traits">
                 {a.traits.map((t, ti) => (
-                  <Img key={ti} className="trait-icon" src={iconUrl(t.icon)} alt={t.tooltip} />
+                  <ColorableIcon
+                    key={ti}
+                    className="trait-icon"
+                    src={iconUrl(t.icon)}
+                    alt={t.tooltip}
+                    colorKey={`weapon.${index}.ammo.${ai}.trait.${ti}.icon`}
+                  />
                 ))}
               </div>
             )}
@@ -675,9 +731,27 @@ function BottomCompactBar({ card }: { card: CardModel }) {
     <div className="bottom-compact-bar">
       <div className="compact-grid compact-header">
         <span />
-        <img src={chromeUrl('Penetration Icon')} alt="Penetration" title="Penetration" />
-        <img src={chromeUrl('Damage Icon')} alt="Damage" title="Damage" />
-        <img src={chromeUrl('Accuracy Icon')} alt="Accuracy" title="Accuracy" />
+        <ColorableIcon
+          className="compact-header-icon"
+          src={chromeUrl('Penetration Icon')}
+          alt="Penetration"
+          title="Penetration"
+          colorKey="compact.pen.icon"
+        />
+        <ColorableIcon
+          className="compact-header-icon"
+          src={chromeUrl('Damage Icon')}
+          alt="Damage"
+          title="Damage"
+          colorKey="compact.dmg.icon"
+        />
+        <ColorableIcon
+          className="compact-header-icon"
+          src={chromeUrl('Accuracy Icon')}
+          alt="Accuracy"
+          title="Accuracy"
+          colorKey="compact.acc.icon"
+        />
       </div>
       {card.weapons.map((w, wi) => (
         <div className="compact-weapon" key={wi}>
@@ -690,25 +764,7 @@ function BottomCompactBar({ card }: { card: CardModel }) {
               onChange={(v) => update((c) => void (c.weapons[wi]!.name = v))}
             />
             {/* icon first so the absolutely-positioned pill paints above it */}
-            {editMode ? (
-              <button
-                className="weapon-icon-btn"
-                title={t(lang, 'changeWeapon')}
-                onClick={() => slots.openWeaponPicker(wi)}
-              >
-                <Img
-                  className={`compact-weapon-icon ${isUploadedImage(w.icon) ? 'no-flip' : ''}`}
-                  src={weaponIconUrl(w.icon)}
-                  alt={w.name}
-                />
-              </button>
-            ) : (
-              <Img
-                className={`compact-weapon-icon ${isUploadedImage(w.icon) ? 'no-flip' : ''}`}
-                src={weaponIconUrl(w.icon)}
-                alt={w.name}
-              />
-            )}
+            <WeaponIcon weapon={w} index={wi} className="compact-weapon-icon" />
             <WeaponCount value={w.count} onChange={(v) => update((c) => void (c.weapons[wi]!.count = v))} />
           </div>
           <div className="compact-ammo-col">
@@ -721,17 +777,12 @@ function BottomCompactBar({ card }: { card: CardModel }) {
                     colorKey={`weapon.${wi}.ammo.${ai}.range`}
                     onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.rangePill = v))}
                   />
-                  {editMode ? (
-                    <button
-                      className="weapon-icon-btn ammo-icon-btn"
-                      title={t(lang, 'changeAmmo')}
-                      onClick={() => slots.openAmmoPicker(wi, ai)}
-                    >
-                      <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
-                    </button>
-                  ) : (
-                    <Img className="ammo-image" src={ammoIconUrl(a.icon)} alt={a.name} />
-                  )}
+                  <AmmoIcon
+                    ammo={a}
+                    weaponIndex={wi}
+                    ammoIndex={ai}
+                    btnClassName="ammo-icon-btn"
+                  />
                   <EditableText
                     className="pill green"
                     value={a.quantity}

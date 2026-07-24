@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useAppStore } from '../state/store'
+import { useColorOverride } from '../state/colors'
 import { isUploadedImage, thumbnailUrl } from '../assets'
 import { EditableText } from '../card/EditableText'
+import { ColorableIcon } from '../ui/ColorableIcon'
 import { LogUnitPicker } from '../ui/LogUnitPicker'
 import type { LogEntry, LogUnit } from './logModel'
 import {
@@ -25,8 +27,10 @@ type PickerTarget =
   | { entryId: string; side: 'left' }
   | { entryId: string; side: 'right'; index: number }
 
-const DEFAULT_LEFT_COLOR = 'var(--log-blue)'
-const DEFAULT_RIGHT_COLOR = 'var(--log-red)'
+// side colors resolve through log.css, so "Swap sides" (which flips these two
+// custom properties on the board) recolors names and icons together
+const DEFAULT_LEFT_COLOR = 'var(--log-left)'
+const DEFAULT_RIGHT_COLOR = 'var(--log-right)'
 
 export function LogBoard() {
   const db = useAppStore((s) => s.db)
@@ -34,6 +38,7 @@ export function LogBoard() {
   const editMode = useAppStore((s) => s.editMode)
   const lang = useAppStore((s) => s.lang)
   const entries = useAppStore((s) => s.log.entries)
+  const swapped = useAppStore((s) => s.log.swapped)
   const update = useAppStore((s) => s.updateLog)
   const [picker, setPicker] = useState<PickerTarget | null>(null)
 
@@ -95,7 +100,7 @@ export function LogBoard() {
   }
 
   return (
-    <div className="kill-log" id="log-root">
+    <div className={`kill-log ${swapped ? 'swapped' : ''}`} id="log-root">
       {entries.length === 0 && !editMode && (
         <div className="kill-log-empty">{t(lang, 'emptyLog')}</div>
       )}
@@ -242,7 +247,7 @@ function UnitCells({
 function Pts({ unit }: { unit: LogUnit }) {
   const update = useAppStore((s) => s.updateLog)
   const ptsKey = `${unit.id}.pts`
-  const override = useAppStore((s) => s.log.textColors?.[ptsKey])
+  const override = useColorOverride(ptsKey)
   return (
     <span className="log-pts" style={override ? { color: override } : undefined}>
       <EditableText
@@ -256,38 +261,62 @@ function Pts({ unit }: { unit: LogUnit }) {
   )
 }
 
-/** Tinted silhouette (game thumbnail) or uploaded icon shown as-is. */
+/** Tinted silhouette (game thumbnail) or uploaded icon shown as-is. Follows the
+ *  unit's name color, unless the icon carries an override of its own. */
 function Logo({ unit, side, onPicker }: { unit: LogUnit; side: 'left' | 'right'; onPicker: () => void }) {
   const editMode = useAppStore((s) => s.editMode)
   const lang = useAppStore((s) => s.lang)
-  const override = useAppStore((s) => s.log.textColors?.[`${unit.id}.name`])
-  const color = override ?? (side === 'left' ? DEFAULT_LEFT_COLOR : DEFAULT_RIGHT_COLOR)
+  const nameColor = useColorOverride(`${unit.id}.name`)
+  const logoColor = useColorOverride(`${unit.id}.logo`)
   const uploaded = isUploadedImage(unit.logo)
   const src = uploaded ? unit.logo : thumbnailUrl(unit.logo)
+  // uploads keep their own colors until the ColorPanel recolors them; game
+  // silhouettes are white masks, so they always take a tint
+  const tint = uploaded
+    ? null
+    : nameColor ?? (side === 'left' ? DEFAULT_LEFT_COLOR : DEFAULT_RIGHT_COLOR)
 
   // in view mode a missing logo collapses so alignment isn't thrown off
   if (!editMode && !src) return null
 
-  let inner: React.ReactNode
-  if (!src) inner = <span className="log-logo empty" />
-  else if (uploaded) inner = <img className="log-logo" src={src} alt={unit.name} />
-  else
-    inner = (
-      <span
-        className="log-logo tinted"
-        style={{
-          backgroundColor: color,
-          WebkitMaskImage: `url("${src}")`,
-          maskImage: `url("${src}")`,
-        }}
-      />
-    )
+  const inner = src ? (
+    <ColorableIcon
+      className="log-logo"
+      src={src}
+      alt={unit.name}
+      colorKey={`${unit.id}.logo`}
+      tint={tint}
+    />
+  ) : (
+    <span className="log-logo empty" />
+  )
 
   if (!editMode) return <span className="log-logo-wrap">{inner}</span>
   return (
-    <button className="log-logo-btn" title={t(lang, 'chooseUnitUpload')} onClick={onPicker}>
-      {inner}
-    </button>
+    <span className="log-logo-wrap">
+      <button className="log-logo-btn" title={t(lang, 'chooseUnitUpload')} onClick={onPicker}>
+        {inner}
+      </button>
+      {src && <LogoColorDot unitId={unit.id} color={logoColor ?? tint ?? '#e7f8e5'} />}
+    </span>
+  )
+}
+
+/** Aims the sidebar ColorPanel at a row's icon. The icon itself lives inside
+ *  the unit-picker button, so recoloring needs a handle of its own — this dot
+ *  doubles as a readout of the color the icon currently uses. */
+function LogoColorDot({ unitId, color }: { unitId: string; color: string }) {
+  const lang = useAppStore((s) => s.lang)
+  const setColorTarget = useAppStore((s) => s.setColorTarget)
+  const key = `${unitId}.logo`
+  const active = useAppStore((s) => s.colorTarget === key)
+  return (
+    <button
+      className={`log-logo-color edit-chrome ${active ? 'active' : ''}`}
+      title={t(lang, 'recolorIcon')}
+      style={{ background: color }}
+      onClick={() => setColorTarget(key)}
+    />
   )
 }
 

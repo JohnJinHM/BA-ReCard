@@ -1,0 +1,23 @@
+/* Icons the sidebar ColorPanel can recolor. Tinting goes through a CSS mask
+   (the game tints its monochrome sprites the same way); size/position still
+   come from each icon's own class, so the tinted span drops into the exact
+   spot its <img> occupied. */
+
+.tinted-icon {
+  display: inline-block;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* edit mode: click an icon to aim the ColorPanel at it (hover-only outline —
+   a permanent one on every icon would bury the card in dashes) */
+.icon-colorable { cursor: pointer; }
+.icon-colorable:hover { outline: 1px dashed rgba(244, 212, 42, 0.55); outline-offset: 1px; }
+.icon-colorable.color-target { outline: 1px solid #f4d42a; outline-offset: 1px; }
+
+/* export strips the edit outlines, like .editable does */
+.exporting .icon-colorable { outline: none; cursor: default; }

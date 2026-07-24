@@ -6,6 +6,10 @@
 .kill-log {
   --log-blue: #0d8ae8;
   --log-red: #e83a20;
+  /* names and icons read their side's colour through these, so "Swap sides"
+     only has to trade the two (per-unit overrides stay where the user put them) */
+  --log-left: var(--log-blue);
+  --log-right: var(--log-red);
   --c-yellow: #f4d42a;
   --c-text: #e7f8e5;
 
@@ -25,6 +29,10 @@
   box-sizing: border-box;
 }
 .kill-log * { box-sizing: border-box; }
+.kill-log.swapped {
+  --log-left: var(--log-red);
+  --log-right: var(--log-blue);
+}
 
 .kill-log-empty {
   padding: 48px 0;
@@ -90,8 +98,8 @@
    wrap and grow the row. The right unit sits in the balanced (narrower) right
    zone, so its text spills past the background bar toward the board edge; its
    cap is bounded by the export box, the left's by its wider zone. */
-.log-unit.left .log-name { color: var(--log-blue); max-width: 298px; }
-.log-unit.right .log-name { color: var(--log-red); max-width: 280px; }
+.log-unit.left .log-name { color: var(--log-left); max-width: 298px; }
+.log-unit.right .log-name { color: var(--log-right); max-width: 280px; }
 
 /* points, centered in their fixed tracks so rows line up */
 .log-pts-col { display: flex; align-items: center; justify-content: center; }
@@ -117,11 +125,9 @@
 .log-logo { width: 84px; height: 35px; display: inline-block; flex: none; object-fit: contain; }
 /* game silhouettes sit low in the source art; crop ~top fifth and bottom-anchor
    so the tinted vehicle reads centered in the row (uploads keep object-fit) */
-.log-logo.tinted {
+.log-logo.tinted-icon {
   -webkit-mask-size: 100% auto;
   mask-size: 100% auto;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
   -webkit-mask-position: center bottom;
   mask-position: center bottom;
 }
@@ -136,6 +142,26 @@
   cursor: pointer;
 }
 .log-logo-btn:hover { border-color: rgba(244, 212, 42, 0.7); }
+
+/* the logo button opens the unit picker, so recoloring the icon gets its own
+   handle: a dot in the corner showing the icon's current colour */
+.log-logo-wrap { position: relative; }
+.log-logo-color {
+  position: absolute;
+  right: -5px;
+  top: -5px;
+  z-index: 2;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  appearance: none;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.65);
+  box-shadow: 0 0 0 1px rgba(231, 248, 229, 0.35);
+  cursor: pointer;
+}
+.log-logo-color:hover,
+.log-logo-color.active { box-shadow: 0 0 0 1px var(--c-yellow); }
 
 /* entry-remove: centered on the first (full) row, in the left gutter */
 .log-entry-remove {

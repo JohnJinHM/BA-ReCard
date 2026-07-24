@@ -30,8 +30,10 @@ export interface LogEntry {
 
 export interface LogModel {
   entries: LogEntry[]
-  /** per-field text color overrides, keyed by "{unit.id}.name" / "{unit.id}.pts" */
+  /** per-field color overrides, keyed by "{unit.id}.name" / ".pts" / ".logo" */
   textColors?: Record<string, string>
+  /** the two sides trade team colors: killers turn red, victims blue */
+  swapped?: boolean
 }
 
 export function newLogId(): string {

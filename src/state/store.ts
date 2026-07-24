@@ -54,6 +54,8 @@ interface AppState {
   updateLog(mutate: (log: LogModel) => void): void
   /** clear the kill log and re-seed it from the current card (if any) */
   resetLog(): void
+  /** trade the log's team colors (killers red, victims blue, and back) */
+  swapLogSides(): void
   /** set/clear a text-color override on whichever model the view shows */
   setColor(key: string, hex: string): void
   clearColor(key: string): void
@@ -179,9 +181,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   resetLog() {
-    const { db, card } = get()
+    const { db, card, log } = get()
     const entries = db && card ? [emptyLogEntry(logUnitFromCard(db, card))] : []
-    set({ log: { entries }, colorTarget: null })
+    // which side is "yours" is a standing preference, not log content — keep it
+    set({ log: { entries, swapped: log.swapped }, colorTarget: null })
+  },
+
+  swapLogSides() {
+    get().updateLog((l) => void (l.swapped = !l.swapped))
   },
 
   setColor(key, hex) {

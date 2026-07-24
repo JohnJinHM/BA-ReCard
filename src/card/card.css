@@ -470,7 +470,7 @@ span.hero-portrait { position: absolute; inset: 0; }
   padding-right: 12px;
 }
 .compact-header { height: 28px; }
-.compact-header img { width: 20px; height: 20px; justify-self: center; }
+.compact-header .compact-header-icon { width: 20px; height: 20px; justify-self: center; }
 
 .compact-weapon {
   display: grid;

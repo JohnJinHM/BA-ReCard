@@ -39,10 +39,10 @@ const STRINGS = {
     eng: 'Import failed: not an exported card file.',
     chi: '导入失败：不是导出的卡片文件。',
   },
-  textColor: { eng: 'Text Color', chi: '文字颜色' },
-  textColorHint: {
-    eng: 'Click text on the card to recolor it.',
-    chi: '点击卡片上的文字以更改颜色。',
+  colorTitle: { eng: 'Color', chi: '颜色' },
+  colorHint: {
+    eng: 'Click text or an icon to recolor it.',
+    chi: '点击文字或图标以更改颜色。',
   },
   themeDefault: { eng: 'Theme default', chi: '主题默认色' },
   pickColor: { eng: 'Pick color', chi: '选择颜色' },
@@ -89,9 +89,15 @@ const STRINGS = {
   addKill: { eng: '+ Add kill', chi: '+ 添加击杀' },
   addVictim: { eng: '+ Add victim', chi: '+ 添加受害者' },
   addVictimInline: { eng: '+ victim', chi: '+ 受害者' },
+  swapSides: { eng: 'Swap sides', chi: '交换阵营' },
+  swapSidesHint: {
+    eng: 'Trade the two sides’ colors (killers red, victims blue)',
+    chi: '交换双方的颜色（击杀方红色，被击杀方蓝色）',
+  },
   removeKill: { eng: 'Remove kill', chi: '移除击杀' },
   removeVictim: { eng: 'Remove victim', chi: '移除受害者' },
   chooseUnitUpload: { eng: 'Choose unit / upload icon', chi: '选择单位 / 上传图标' },
+  recolorIcon: { eng: 'Recolor icon', chi: '更改图标颜色' },
 
   // Log unit picker
   selectUnit: { eng: 'Select unit', chi: '选择单位' },

@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { useAppStore } from '../state/store'
+import { useColorOverride } from '../state/colors'
 
 interface Props {
   value: string
@@ -17,11 +18,7 @@ interface Props {
  */
 export function EditableText({ value, onChange, className, colorKey }: Props) {
   const editMode = useAppStore((s) => s.editMode)
-  const color = useAppStore((s) => {
-    if (!colorKey) return undefined
-    const colors = s.view === 'log' ? s.log.textColors : s.card?.textColors
-    return colors?.[colorKey]
-  })
+  const color = useColorOverride(colorKey)
   const isColorTarget = useAppStore((s) => colorKey != null && s.colorTarget === colorKey)
   const setColorTarget = useAppStore((s) => s.setColorTarget)
   const ref = useRef<HTMLSpanElement>(null)
