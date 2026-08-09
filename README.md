@@ -58,6 +58,9 @@ and replace `public/data/`.
 3. `UnitCard` renders the `CardModel` to match the in-game prefab: 408×710,
    hero portrait bar (name, points, abilities, armor, stat icons) over a
    two-column weapons area; compact mode swaps in the dense per-weapon rows.
+   The current card style also adds the return-to-battlegroup timer, weapon
+   Suppressed/close-quarters icons, and ammunition guidance icons; a **Legacy**
+   toggle keeps the previous card style.
 4. **Edit mode** turns every value on the card into a contentEditable span —
    edits mutate the `CardModel` copy, so anything can be overridden (or set
    to `-`).
@@ -93,3 +96,5 @@ and replace `public/data/`.
       upload a custom icon
 - [x] Tag-icon slots (4): pick from the icon library or upload
 - [x] Custom card database (save/load edited cards as JSON in localStorage)
+- [x] New card style: battlegroup timer + weapon Suppressed/CQC + ammo guidance icons
+- [x] Legacy card-style toggle

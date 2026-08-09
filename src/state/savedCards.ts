@@ -2,7 +2,7 @@
 // Each entry snapshots the displayed CardModel plus the context needed to
 // restore it (variant selection, compact mode).
 
-import type { CardModel } from '../card/model'
+import type { CardModel, CardStyle } from '../card/model'
 import type { VariantSelection } from '../data/resolve'
 
 export interface SavedCard {
@@ -11,6 +11,8 @@ export interface SavedCard {
   name: string
   savedAt: number
   compact: boolean
+  /** card style at save time; older entries omit it (default to 'new') */
+  style?: CardStyle
   selection: VariantSelection
   card: CardModel
 }
@@ -66,6 +68,7 @@ export function parseSavedCardFile(text: string): SavedCard | null {
       name: parsed.name.trim() || 'Untitled',
       savedAt: typeof parsed.savedAt === 'number' ? parsed.savedAt : Date.now(),
       compact: typeof parsed.compact === 'boolean' ? parsed.compact : true,
+      style: parsed.style === 'legacy' || parsed.style === 'new' ? parsed.style : undefined,
       selection: parsed.selection ?? {},
       card: parsed.card,
     }

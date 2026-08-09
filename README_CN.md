@@ -55,7 +55,8 @@ node scripts/extract-assets.mjs <ExportedProject 路径>
    最终输出一个所有可见字段都为字符串的 `CardModel`。
 3. `UnitCard` 按游戏内prefab渲染 `CardModel`：408×710，顶部头像栏
    （名称、点数、技能、装甲、属性图标），下方为两栏武器区；
-   紧凑模式则替换为逐行信息。
+   紧凑模式则替换为逐行信息。当前样式还会加入归队计时（return to battlegroup）、
+   武器的消音/近战图标以及弹药制导图标；**旧版（Legacy）** 开关可切回此前的卡片样式。
 4. **编辑模式**把卡上每个数值变成 contentEditable 区块——编辑会修改 `CardModel` 副本，
    因此任何字段都可覆盖（或设为 `-`）。
 5. **导入图片…**通过裁剪对话框上传图片，尺寸固定为游戏内的 816×550 
@@ -85,4 +86,6 @@ node scripts/extract-assets.mjs <ExportedProject 路径>
 - [x] 本地化（英/中）
 - [x] 编辑模式下替换武器图标（上传自定义武器 logo）
 - [x] 自定义卡片数据库（把编辑后的卡片以 JSON 存取到 localStorage）
+- [x] 新版卡片样式：归队计时 + 武器消音/近战图标 + 弹药制导图标
+- [x] 旧版样式开关
 

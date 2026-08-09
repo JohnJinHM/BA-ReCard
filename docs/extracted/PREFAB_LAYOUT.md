@@ -2,6 +2,62 @@
 
 Source: AssetRipper export at `C:\Users\jinha\Desktop\Temp\BA\ExportedProject\Assets\Prefabs\GUI\Arsenal\Infocard\`
 Unity 2022.3, uGUI + TextMeshPro. Extracted 2026-07-01 by parsing prefab YAML.
+Refreshed against game build **1.1.1.1** (export `C:\Users\jinha\Desktop\Export\ExportedProject`).
+
+## New-style card additions (build 1.1.1.1)
+
+The current in-game info card adds a few elements the original layout above did
+not render. These are the "new" card style; the app keeps the older look as a
+selectable **Legacy** style (`state.style`), which renders exactly as before.
+Ground truth = the reference shots in `/samples`.
+
+- **Return-to-battlegroup timer** — an 8th stat appended to the stats strip
+  (icon `DeathTimer`, clock+skull), the `ui_infocard_refund` "Return to
+  battlegroup delay". The base delay is **not** in the extracted DB (only the
+  per-unit `Units.TimeModifierRefund` second-offset is), so the app shows
+  `RTB_BASE_SECONDS (585) + TimeModifierRefund` as `M:SS` — exact for the
+  infantry reference (Spetsnaz, modifier 0 → 9:45) and editable per card.
+- **Weapon trait icons** — the new `Weapons.CQC` and `Weapons.Silent` flags add
+  two icons, CQC first and Suppressed to its right (`CQC Icon`/`Silent Icon`).
+  On the **compact silhouette overlay** they render green (`#7CFF81`); in the
+  **expanded** detail-header top-right they render **white** (as in the reference
+  card). Sprites live under `Prefabs/GUI/HUD/Images/Infocard/Icons for weapon/`.
+- **Ammunition guidance** (new style only) — `Ammunitions.Seeker` (0 none / 10
+  Fire-and-Forget / 50 Terminal Guidance / 100 Semi-Active / 200 Anti-Radiation)
+  maps via `SEEKER_GUIDANCE` to a **list** of pre-colored `Traits/Ammo/` sprites
+  (`FF_Icon` green, `Terninal_Guidance_Icon` green, `Semi_Active_Icon` **red**,
+  `Anti_Radar_Icon`). A munition can carry several: SEAD (200, e.g. AGM-88 HARM)
+  is Anti-Radiation **and** Fire-and-Forget → two chips. Stored on
+  `AmmoModel.guidance` (icons, rendered untinted) + `guidanceLabel` (text).
+  Labels use `ui_enum_seeker_*`; the row label is `ui_infocard_ammo_seeker_type`
+  ("Guidance"). Rendering:
+  - **Compact** — icons only. Plane weapons show them **centered** in the ammo
+    slot (which drops its silhouette and range/count pills); ground/heli munitions
+    append them to the target-type column.
+  - **Expanded** — a **text row** ("Guidance: <labels>") directly under "Shell
+    trajectory"; no guidance icon appears in the ammo header.
+- **Plane self-propelled munitions drop the ammo silhouette + pills** — for
+  aircraft (`CardModel.aircraft`), a munition whose silhouette duplicates the
+  weapon icon — missiles/cruise/ballistic/bombs, i.e. `Ammunitions.TrajectoryType
+  >= 110` (`AmmoModel.selfPropelled`) — shows no silhouette and no range/count
+  pills in compact (only the centered guidance icons, if any), and no silhouette
+  in expanded. **Guns and rockets** (TrajectoryType 10 Direct, incl. S-8/Hydra)
+  keep their silhouette and pills, as do all ground/heli weapons.
+- **Compact weapon-trait colors** — the compact silhouette overlay uses the
+  pre-colored "new" trait sprites via `TraitChip.compactIcon`: the "can't shoot
+  on the move" marker is the **red** `CantShootOnTheMove` sign and the autoloader
+  is the **green** `AutoLoading` gears; the expanded detail header keeps the white
+  `Order_Stop` / `reload` variants.
+- **Compact target column** — in the new style the third ("Accuracy") column
+  shows the ammo's target-type (+ guidance, non-plane) icons, **falling back to
+  the numeric accuracy** when there are none (e.g. anti-ship Kh-35U has no mapped
+  target icon, so its 40 m accuracy still shows); legacy always shows the number.
+- **Expanded right alignment** — stat values, ammo counts, and trait icons share
+  a unified 12px right margin (= the left content margin); fixed a legacy
+  misalignment where stat values sat 32px in while counts sat at 12px.
+- **Infantry weight** — infantry `Units.Weight` is always 1; the stat strip now
+  shows the squad transport weight = `SquadMembers` count × 125 (Spetsnaz 8 →
+  1000). This corrects a pre-existing bug and applies to **both** styles.
 
 ## 0. Prefabs in the Infocard folder
 

@@ -31,6 +31,40 @@ import {
 /** Chosen option per modification id; missing entries use the default option. */
 export type VariantSelection = Record<number, number>
 
+// Infantry have no per-unit weight in the DB (all Weight=1); the game shows the
+// squad's transport weight = members × a fixed per-soldier weight (Spetsnaz 8 →
+// 1000; matches the 750/1000/1500 pattern for 6/8/12-man squads).
+const INFANTRY_WEIGHT_PER_SOLDIER = 125
+
+// "Return to battlegroup delay" (the clock+skull stat). The base delay isn't in
+// the extracted DB (only the per-unit TimeModifierRefund offset is), so this is
+// calibrated to the in-game reference cards (Spetsnaz, modifier 0 → 9:45); the
+// value stays editable on the card. New-style only.
+const RTB_BASE_SECONDS = 585
+
+/** Green highlight used for the CQC/Suppressed weapon icons. */
+const TRAIT_GREEN = '#7cff81'
+
+// Ammunitions.TrajectoryType at/above this are self-propelled munitions
+// (Missile 110, Cruise 200, Ballistic 300, Bomb 400/410) whose silhouette
+// duplicates the weapon icon; below it are guns/rockets/shells (Direct 10,
+// Artillery 20, Mortar 30, MLRS 40) that keep their own ammo silhouette.
+const SELF_PROPELLED_TRAJECTORY_MIN = 110
+
+/** Guidance descriptors for a munition, keyed by Ammunitions.Seeker. A munition
+ *  can carry several (SEAD missiles like AGM-88 HARM are both anti-radiation and
+ *  fire-and-forget). The sprites carry their own color (semi-active radar red,
+ *  fire-and-forget green, anti-radar amber), so they render untinted. */
+const SEEKER_GUIDANCE: Record<number, { icon: string; key: string; fallback: string }[]> = {
+  10: [{ icon: 'FF_Icon', key: 'ui_enum_seeker_ff', fallback: 'Fire-and-Forget' }],
+  50: [{ icon: 'Terninal_Guidance_Icon', key: 'ui_enum_seeker_terminal', fallback: 'Terminal Guidance' }],
+  100: [{ icon: 'Semi_Active_Icon', key: 'ui_enum_seeker_sa', fallback: 'Semi-Active' }],
+  200: [
+    { icon: 'Anti_Radar_Icon', key: 'ui_enum_seeker_sead', fallback: 'Anti-Radiation' },
+    { icon: 'FF_Icon', key: 'ui_enum_seeker_ff', fallback: 'Fire-and-Forget' },
+  ],
+}
+
 // Display formatting, mirroring the game's InfocardConfig
 // (docs/extracted/ASSETS.md): RoundDigits 2, EffectiveRangeMultiplier 2.
 // Calibrated against the in-game screenshots in /samples: stat-strip values
@@ -373,7 +407,10 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout, weaponRows: WeaponRow[]
     else if (mob.MaxSpeedReverse > 0)
       push('Speed backwards.car', L('ui_infocard_speed_back', 'Reverse speed'), fmtInt(mob.MaxSpeedReverse))
   }
-  push('Weight', L('ui_infocard_weight', 'Weight'), fmtInt(unit.Weight))
+  // Infantry carry no meaningful unit.Weight (always 1); the card shows the
+  // squad's transport weight = members × per-soldier weight.
+  const weightValue = isInf ? squad.length * INFANTRY_WEIGHT_PER_SOLDIER : unit.Weight
+  push('Weight', L('ui_infocard_weight', 'Weight'), fmtInt(weightValue))
 
   // One Ability row can carry several features (e.g. "Sprint Smoke",
   // "ECM Plane 20" = decoys + ECM) — the game renders one chip per feature.
@@ -429,7 +466,15 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout, weaponRows: WeaponRow[]
     tags,
     weapons,
     squadSize: squad.length > 0 ? String(squad.length) : '',
+    deathTimer: fmtDuration(RTB_BASE_SECONDS + (unit.TimeModifierRefund ?? 0)),
+    aircraft: isAir,
   }
+}
+
+/** Seconds → "M:SS" for the return-to-battlegroup delay stat. */
+function fmtDuration(totalSeconds: number): string {
+  const s = Math.max(0, Math.round(totalSeconds))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
 interface MergedWeapon {
@@ -554,10 +599,28 @@ function buildWeaponModel(db: GameDb, unit: UnitRow, mw: MergedWeapon): WeaponMo
 
   const traits: TraitChip[] = []
   // The hand icon marks weapons that CANNOT fire on the move (ui_infocard_weapon_static).
+  // Compact uses the pre-colored red stop sign; expanded keeps the white hand.
   if (!w.CanShootOnTheMove)
-    traits.push({ icon: 'Order_Stop', tooltip: db.cardLocOr('ui_infocard_weapon_static', "Can't shoot whilst moving") })
+    traits.push({
+      icon: 'Order_Stop',
+      compactIcon: 'CantShootOnTheMove',
+      tooltip: db.cardLocOr('ui_infocard_weapon_static', "Can't shoot whilst moving"),
+    })
+  // Compact uses the pre-colored green autoloader gears; expanded keeps white.
   if (w.AutoLoaded)
-    traits.push({ icon: 'reload', tooltip: db.cardLocOr('ui_infocard_weapon_autoloader', 'Autoloading') })
+    traits.push({
+      icon: 'reload',
+      compactIcon: 'AutoLoading',
+      tooltip: db.cardLocOr('ui_infocard_weapon_autoloader', 'Autoloading'),
+    })
+
+  // New-style weapon traits, both drawn green: CQC first, Suppressed to its
+  // right. Kept in a separate list so Legacy renders exactly the two above.
+  const newTraits: TraitChip[] = []
+  if (w.CQC)
+    newTraits.push({ icon: 'CQC Icon', tooltip: db.cardLocOr('ui_infocard_weapon_cqc', 'Close quarter'), tint: TRAIT_GREEN })
+  if (w.Silent)
+    newTraits.push({ icon: 'Silent Icon', tooltip: db.cardLocOr('ui_infocard_weapon_silent', 'Suppressed'), tint: TRAIT_GREEN })
 
   // Format per the AH-1W sample: "Aim time 2 - 3 sec", "Magazine size 150",
   // "Reload time 15 - 20 sec".
@@ -587,6 +650,7 @@ function buildWeaponModel(db: GameDb, unit: UnitRow, mw: MergedWeapon): WeaponMo
     count: count > 1 ? `x${count}` : '',
     typeLabel: db.cardLocOr(WeaponTypeLocKey[w.Type], WeaponType[w.Type] ?? ''),
     traits,
+    newTraits,
     stats,
     ammo: ammoRows.map((r) => {
       const a = db.ammunitions.get(r.ammunitionId)
@@ -603,6 +667,9 @@ function buildAmmoModel(db: GameDb, a: AmmunitionRow | null, quantity: number): 
       quantity: `x${fmtInt(quantity)}`,
       rangePill: EMPTY_VALUE,
       traits: [],
+      guidance: [],
+      guidanceLabel: '',
+      selfPropelled: false,
       stats: [],
       compact: { penetration: '0', damage: '0', accuracy: '0', isHeat: false },
     }
@@ -624,6 +691,12 @@ function buildAmmoModel(db: GameDb, a: AmmunitionRow | null, quantity: number): 
     traits.push({ icon: 'Top Attack Type Icon', tooltip: L('ui_infocard_ammo_top_attack', 'Top armor damage') })
   if (a.LaserGuided)
     traits.push({ icon: 'Laser designation', tooltip: L('ui_infocard_ammo_laser', 'Laser guided') })
+
+  // Guidance (Ammunitions.Seeker): pre-colored chips for compact + a joined
+  // label for the expanded "Guidance" text row. New style only (rendered so).
+  const guidanceDefs = SEEKER_GUIDANCE[a.Seeker] ?? []
+  const guidance: TraitChip[] = guidanceDefs.map((g) => ({ icon: g.icon, tooltip: L(g.key, g.fallback) }))
+  const guidanceLabel = guidanceDefs.map((g) => L(g.key, g.fallback)).join(', ')
 
   const isHeat = a.ArmorTargeted === 2
   const armorTypeName =
@@ -668,6 +741,9 @@ function buildAmmoModel(db: GameDb, a: AmmunitionRow | null, quantity: number): 
     quantity: `x${fmtInt(quantity)}`,
     rangePill: bestRange > 0 ? `${fmtInt(effRange(bestRange))}m` : EMPTY_VALUE,
     traits,
+    guidance,
+    guidanceLabel,
+    selfPropelled: a.TrajectoryType >= SELF_PROPELLED_TRAJECTORY_MIN,
     stats,
     compact: {
       // Zero/absent numeric stats show "0" rather than "-" (e.g. SSO's

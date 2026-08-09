@@ -2,6 +2,11 @@
 // The resolver (data/resolve.ts) produces one from game data; the editor
 // mutates a copy of it directly, so every visible field stays customizable.
 
+/** Card presentation: "new" is the current in-game info card (adds the
+ *  return-to-battlegroup timer, weapon Suppressed/CQC icons, ammo guidance
+ *  icons, and compact target icons); "legacy" is the previous card style. */
+export type CardStyle = 'legacy' | 'new'
+
 export interface ArmorFacing {
   kinetic: string
   heat: string
@@ -37,6 +42,12 @@ export interface AbilityLine {
 export interface TraitChip {
   icon: string | null
   tooltip: string
+  /** default sprite color when set (e.g. CQC renders green in game); absent
+   *  keeps the sprite's own color. Users can still recolor via the ColorPanel. */
+  tint?: string
+  /** compact-mode sprite override (e.g. the pre-colored red "can't shoot on the
+   *  move" sign); expanded keeps `icon`. */
+  compactIcon?: string
 }
 
 export interface AmmoModel {
@@ -46,6 +57,16 @@ export interface AmmoModel {
   /** yellow distance pill, e.g. "1200m" */
   rangePill: string
   traits: TraitChip[]
+  /** guidance-type chips (Ammunitions.Seeker), pre-colored; new style only.
+   *  Compact renders the icon(s) (centered in the plane ammo slot, or appended
+   *  to the target column for ground/heli); expanded renders `guidanceLabel` as
+   *  a text row. SEAD munitions (e.g. AGM-88 HARM) carry two chips. */
+  guidance: TraitChip[]
+  /** joined guidance names for the expanded "Guidance" stat row ('' if none) */
+  guidanceLabel: string
+  /** self-propelled munition (missile/cruise/ballistic/bomb) — its silhouette
+   *  duplicates the weapon icon, so plane weapons drop it and its pills. */
+  selfPropelled: boolean
   /** label:value lines of the expanded ammo panel (damage model) */
   stats: StatLine[]
   /** key numbers for the compact row (pen | damage | accuracy columns) */
@@ -65,6 +86,9 @@ export interface WeaponModel {
   count: string
   typeLabel: string
   traits: TraitChip[]
+  /** new-style-only weapon traits (Suppressed, Close-quarters); kept apart from
+   *  `traits` so the Legacy style renders exactly as before */
+  newTraits: TraitChip[]
   stats: StatLine[]
   ammo: AmmoModel[]
 }
@@ -96,6 +120,12 @@ export interface CardModel {
   weapons: WeaponModel[]
   /** squad size for infantry, '' otherwise */
   squadSize: string
+  /** "Return to battlegroup delay" as "M:SS" (the clock+skull stat). New-style
+   *  only; empty on fully custom cards. */
+  deathTimer: string
+  /** aircraft unit: plane weapons drop the redundant ammo silhouette (the
+   *  weapon icon already is the munition) and show guidance in that slot. */
+  aircraft: boolean
 }
 
 export const EMPTY_VALUE = '-'
@@ -129,6 +159,7 @@ export function emptyWeapon(): WeaponModel {
     count: '',
     typeLabel: '',
     traits: [],
+    newTraits: [],
     stats: [],
     ammo: [],
   }
@@ -143,6 +174,9 @@ export function emptyAmmo(): AmmoModel {
     quantity: 'x1',
     rangePill: EMPTY_VALUE,
     traits: [],
+    guidance: [],
+    guidanceLabel: '',
+    selfPropelled: false,
     stats: [],
     compact: { penetration: '0', damage: '0', accuracy: '0', isHeat: false },
   }
@@ -177,5 +211,7 @@ export function emptyCard(): CardModel {
     tags: [],
     weapons: [],
     squadSize: '',
+    deathTimer: '',
+    aircraft: false,
   }
 }

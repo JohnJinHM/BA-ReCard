@@ -6,6 +6,11 @@ const STRINGS = {
   expanded: { eng: 'Expanded', chi: '详细' },
   compact: { eng: 'Compact', chi: '默认' },
   logs: { eng: 'Logs', chi: '日志' },
+  legacy: { eng: 'Legacy', chi: '旧版' },
+  legacyHint: {
+    eng: 'Legacy card style (hides the battlegroup timer, weapon Suppressed/CQC icons, and ammo guidance icons)',
+    chi: '旧版卡片样式（隐藏归队计时、武器消音/近战图标与弹药制导图标）',
+  },
   edit: { eng: 'Edit', chi: '编辑' },
   editing: { eng: 'Editing…', chi: '编辑中…' },
   portrait: { eng: 'Import...', chi: '导入图片…' },

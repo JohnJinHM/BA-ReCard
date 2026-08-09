@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, Fragment, useContext, useMemo, useState } from 'react'
 import type { AmmoModel, CardModel, WeaponModel } from './model'
 import { emptyWeapon, emptyAmmo, emptyTag, removeIndexedColors } from './model'
 import { EditableText } from './EditableText'
@@ -302,7 +302,8 @@ export function UnitCard({ card }: { card: CardModel }) {
 
   return (
     <SlotContext.Provider value={slots}>
-      <div className="unit-card" id="unit-card-root">
+      <div className="card-root" id="unit-card-root">
+      <div className="unit-card">
         <TopInfoBar card={card} />
         <div className="h-divider" />
         {card.weapons.length === 0 ? (
@@ -351,9 +352,10 @@ export function UnitCard({ card }: { card: CardModel }) {
               )}
             </div>
             <div className="v-divider" />
-            {weapon && <WeaponDetail weapon={weapon} index={weaponIdx} />}
+            {weapon && <WeaponDetail weapon={weapon} index={weaponIdx} aircraft={card.aircraft} />}
           </div>
         )}
+      </div>
       </div>
 
       {picker?.kind === 'weapon' && (
@@ -401,6 +403,7 @@ export function UnitCard({ card }: { card: CardModel }) {
 function TopInfoBar({ card }: { card: CardModel }) {
   const update = useAppStore((s) => s.updateCard)
   const editMode = useAppStore((s) => s.editMode)
+  const style = useAppStore((s) => s.style)
   const lang = useAppStore((s) => s.lang)
   const slots = useSlots()
   // The right column holds at most TAG_SLOTS icons total; resolved abilities
@@ -557,6 +560,24 @@ function TopInfoBar({ card }: { card: CardModel }) {
               />
             </div>
           ))}
+          {/* new style: "return to battlegroup delay" (clock+skull), appended
+              as the last stat */}
+          {style === 'new' && card.deathTimer && (
+            <div className="stat-item" title="Return to battlegroup delay">
+              <ColorableIcon
+                className="stat-icon"
+                src={iconUrl('DeathTimer')}
+                alt="Return to battlegroup delay"
+                colorKey="stat.deathTimer.icon"
+              />
+              <EditableText
+                className="stat-caption"
+                value={card.deathTimer}
+                colorKey="stat.deathTimer.value"
+                onChange={(v) => update((c) => void (c.deathTimer = v))}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -608,9 +629,18 @@ function ArmorBlock({ card, facing, className, layout }: {
   )
 }
 
-function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number }) {
+function WeaponDetail({
+  weapon,
+  index,
+  aircraft,
+}: {
+  weapon: WeaponModel
+  index: number
+  aircraft: boolean
+}) {
   const update = useAppStore((s) => s.updateCard)
   const editMode = useAppStore((s) => s.editMode)
+  const style = useAppStore((s) => s.style)
   const lang = useAppStore((s) => s.lang)
   const slots = useSlots()
   return (
@@ -622,6 +652,9 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
           colorKey={`weapon.${index}.type`}
           onChange={(v) => update((c) => void (c.weapons[index]!.typeLabel = v))}
         />
+        {/* trait icons at the top-right of the detail header; Suppressed/CQC
+            (newTraits) are the new style's only addition to the detail view.
+            Rendered white here (they show green only on the compact overlay). */}
         <div className="weapon-traits">
           {weapon.traits.map((t, i) => (
             <ColorableIcon
@@ -632,6 +665,16 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
               colorKey={`weapon.${index}.trait.${i}.icon`}
             />
           ))}
+          {style === 'new' &&
+            (weapon.newTraits ?? []).map((t, i) => (
+              <ColorableIcon
+                key={`n${i}`}
+                className="trait-icon"
+                src={iconUrl(t.icon)}
+                alt={t.tooltip}
+                colorKey={`weapon.${index}.newtrait.${i}.icon`}
+              />
+            ))}
         </div>
       </div>
 
@@ -658,7 +701,12 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
         {weapon.ammo.map((a, ai) => (
           <div className="ammo-info" key={ai}>
             <div className="ammo-top-row">
-              <AmmoIcon ammo={a} weaponIndex={index} ammoIndex={ai} />
+              {/* plane missiles/bombs drop the redundant ammo silhouette (the
+                  weapon icon already is the munition); guns/rockets and
+                  ground/heli keep it */}
+              {aircraft && a.selfPropelled ? null : (
+                <AmmoIcon ammo={a} weaponIndex={index} ammoIndex={ai} />
+              )}
               <EditableText
                 className="ammo-title"
                 value={a.name}
@@ -677,12 +725,12 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
             </div>
             {a.traits.length > 0 && (
               <div className="ammo-traits">
-                {a.traits.map((t, ti) => (
+                {a.traits.map((tr, ti) => (
                   <ColorableIcon
                     key={ti}
                     className="trait-icon"
-                    src={iconUrl(t.icon)}
-                    alt={t.tooltip}
+                    src={iconUrl(tr.icon)}
+                    alt={tr.tooltip}
                     colorKey={`weapon.${index}.ammo.${ai}.trait.${ti}.icon`}
                   />
                 ))}
@@ -690,25 +738,48 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
             )}
             <div className="ammo-stats">
               {a.stats.map((s, si) => (
-                <div className="stats-item" key={si}>
-                  <EditableText
-                    className="stats-item-label"
-                    value={s.label}
-                    colorKey={`weapon.${index}.ammo.${ai}.stat.${si}.label`}
-                    onChange={(v) =>
-                      update((c) => void (c.weapons[index]!.ammo[ai]!.stats[si]!.label = v))
-                    }
-                  />
-                  <EditableText
-                    className="stats-item-value"
-                    value={s.value}
-                    colorKey={`weapon.${index}.ammo.${ai}.stat.${si}.value`}
-                    onChange={(v) =>
-                      update((c) => void (c.weapons[index]!.ammo[ai]!.stats[si]!.value = v))
-                    }
-                  />
-                </div>
+                <Fragment key={si}>
+                  <div className="stats-item">
+                    <EditableText
+                      className="stats-item-label"
+                      value={s.label}
+                      colorKey={`weapon.${index}.ammo.${ai}.stat.${si}.label`}
+                      onChange={(v) =>
+                        update((c) => void (c.weapons[index]!.ammo[ai]!.stats[si]!.label = v))
+                      }
+                    />
+                    <EditableText
+                      className="stats-item-value"
+                      value={s.value}
+                      colorKey={`weapon.${index}.ammo.${ai}.stat.${si}.value`}
+                      onChange={(v) =>
+                        update((c) => void (c.weapons[index]!.ammo[ai]!.stats[si]!.value = v))
+                      }
+                    />
+                  </div>
+                  {/* guidance as a text row directly under "Shell trajectory" */}
+                  {si === 0 && style === 'new' && a.guidanceLabel && (
+                    <div className="stats-item">
+                      <span className="stats-item-label">Guidance</span>
+                      <EditableText
+                        className="stats-item-value"
+                        value={a.guidanceLabel}
+                        colorKey={`weapon.${index}.ammo.${ai}.guidancelabel`}
+                        onChange={(v) =>
+                          update((c) => void (c.weapons[index]!.ammo[ai]!.guidanceLabel = v))
+                        }
+                      />
+                    </div>
+                  )}
+                </Fragment>
               ))}
+              {/* no stats at all but guided → still show the guidance row */}
+              {style === 'new' && a.guidanceLabel && a.stats.length === 0 && (
+                <div className="stats-item">
+                  <span className="stats-item-label">Guidance</span>
+                  <span className="stats-item-value">{a.guidanceLabel}</span>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -725,10 +796,11 @@ function WeaponDetail({ weapon, index }: { weapon: WeaponModel; index: number })
 function BottomCompactBar({ card }: { card: CardModel }) {
   const update = useAppStore((s) => s.updateCard)
   const editMode = useAppStore((s) => s.editMode)
+  const style = useAppStore((s) => s.style)
   const lang = useAppStore((s) => s.lang)
   const slots = useSlots()
   return (
-    <div className="bottom-compact-bar">
+    <div className={`bottom-compact-bar ${style === 'new' ? 'new' : ''}`}>
       <div className="compact-grid compact-header">
         <span />
         <ColorableIcon
@@ -766,29 +838,66 @@ function BottomCompactBar({ card }: { card: CardModel }) {
             {/* icon first so the absolutely-positioned pill paints above it */}
             <WeaponIcon weapon={w} index={wi} className="compact-weapon-icon" />
             <WeaponCount value={w.count} onChange={(v) => update((c) => void (c.weapons[wi]!.count = v))} />
+            {/* new-style: weapon trait icons (Suppressed/CQC, static, autoload)
+                overlaid at the bottom-left of the silhouette */}
+            {style === 'new' && [...w.traits, ...(w.newTraits ?? [])].length > 0 && (
+              <div className="compact-weapon-traits">
+                {[...w.traits, ...(w.newTraits ?? [])].map((tr, ti) => (
+                  <ColorableIcon
+                    key={ti}
+                    className="compact-trait-icon"
+                    src={iconUrl(tr.compactIcon ?? tr.icon)}
+                    alt={tr.tooltip}
+                    tint={tr.tint ?? null}
+                    colorKey={`weapon.${wi}.overlaytrait.${ti}.icon`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
           <div className="compact-ammo-col">
             {w.ammo.map((a, ai) => (
               <div className="compact-grid compact-ammo" key={ai}>
                 <div className="compact-ammo-main">
-                  <EditableText
-                    className="pill yellow"
-                    value={a.rangePill}
-                    colorKey={`weapon.${wi}.ammo.${ai}.range`}
-                    onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.rangePill = v))}
-                  />
-                  <AmmoIcon
-                    ammo={a}
-                    weaponIndex={wi}
-                    ammoIndex={ai}
-                    btnClassName="ammo-icon-btn"
-                  />
-                  <EditableText
-                    className="pill green"
-                    value={a.quantity}
-                    colorKey={`weapon.${wi}.ammo.${ai}.qty`}
-                    onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.quantity = v))}
-                  />
+                  {card.aircraft && a.selfPropelled ? (
+                    /* plane missiles/bombs: no silhouette and no range/count
+                       pills — just the centered guidance icon(s) in the new
+                       style. Guns/rockets keep their silhouette + pills below. */
+                    style === 'new' && a.guidance.length > 0 ? (
+                      <div className="compact-guidance-slot">
+                        {a.guidance.map((g, gi) => (
+                          <ColorableIcon
+                            key={gi}
+                            className="compact-guidance-icon"
+                            src={iconUrl(g.icon)}
+                            alt={g.tooltip}
+                            colorKey={`weapon.${wi}.ammo.${ai}.guidance.${gi}`}
+                          />
+                        ))}
+                      </div>
+                    ) : null
+                  ) : (
+                    <>
+                      <EditableText
+                        className="pill yellow"
+                        value={a.rangePill}
+                        colorKey={`weapon.${wi}.ammo.${ai}.range`}
+                        onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.rangePill = v))}
+                      />
+                      <AmmoIcon
+                        ammo={a}
+                        weaponIndex={wi}
+                        ammoIndex={ai}
+                        btnClassName="ammo-icon-btn"
+                      />
+                      <EditableText
+                        className="pill green"
+                        value={a.quantity}
+                        colorKey={`weapon.${wi}.ammo.${ai}.qty`}
+                        onChange={(v) => update((c) => void (c.weapons[wi]!.ammo[ai]!.quantity = v))}
+                      />
+                    </>
+                  )}
                   {editMode && (
                     <RemoveBtn
                       className="compact-ammo-remove"
@@ -812,14 +921,40 @@ function BottomCompactBar({ card }: { card: CardModel }) {
                     update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.damage = v))
                   }
                 />
-                <EditableText
-                  className="compact-stat"
-                  value={a.compact.accuracy}
-                  colorKey={`weapon.${wi}.ammo.${ai}.acc`}
-                  onChange={(v) =>
-                    update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.accuracy = v))
-                  }
-                />
+                {(() => {
+                  const accuracyCell = (
+                    <EditableText
+                      className="compact-stat"
+                      value={a.compact.accuracy}
+                      colorKey={`weapon.${wi}.ammo.${ai}.acc`}
+                      onChange={(v) =>
+                        update((c) => void (c.weapons[wi]!.ammo[ai]!.compact.accuracy = v))
+                      }
+                    />
+                  )
+                  if (style !== 'new') return accuracyCell
+                  // new style: target-type icons; guidance is appended here
+                  // except for plane missiles/bombs (whose guidance sits in the
+                  // ammo slot). Fall back to the accuracy value when there is
+                  // nothing to show (e.g. anti-ship Kh-35U has no target icon).
+                  const chips =
+                    card.aircraft && a.selfPropelled ? a.traits : [...a.traits, ...a.guidance]
+                  return chips.length > 0 ? (
+                    <div className="compact-ammo-traits">
+                      {chips.map((tr, ti) => (
+                        <ColorableIcon
+                          key={ti}
+                          className="compact-ammo-trait-icon"
+                          src={iconUrl(tr.icon)}
+                          alt={tr.tooltip}
+                          colorKey={`weapon.${wi}.ammo.${ai}.trait.${ti}.icon`}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    accuracyCell
+                  )
+                })()}
               </div>
             ))}
             {editMode && (

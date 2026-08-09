@@ -5,6 +5,16 @@ Source: AssetRipper export of Broken Arrow (Unity 2022.3) at
 
 All paths below are relative to `C:\Users\jinha\Desktop\Temp\BA\ExportedProject\` unless absolute.
 
+> **Build 1.1.1.1 refresh (2026-08):** re-run against
+> `C:\Users\jinha\Desktop\Export\ExportedProject`. New card-relevant sprites:
+> `Icons for weapon/CQC Icon` + `Silent Icon` (weapon traits, tinted green in
+> app); `Icons for weapon/Traits/Ammo/` — the **pre-colored** guidance icons
+> `FF_Icon`/`Terninal_Guidance_Icon` (green), `Semi_Active_Icon` (red),
+> `Anti_Radar_Icon` (keyed by `Ammunitions.Seeker`, rendered untinted);
+> `General icons/DeathTimer` (the return-to-battlegroup timer stat).
+> `extract-assets.mjs` copies the whole `Infocard/` tree recursively, so these
+> land in `public/assets/icons/` automatically.
+
 ---
 
 ## 1. Infocard Config

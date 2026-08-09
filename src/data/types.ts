@@ -19,6 +19,8 @@ export interface UnitRow {
   Stealth: number
   InfantrySlots: number
   MaxStress: number
+  /** seconds added to the base "return to battlegroup delay" (0 for most units) */
+  TimeModifierRefund: number
   ContentMembership: number
   DisplayInArmory: boolean
   IsUnitModification: boolean
@@ -128,6 +130,10 @@ export interface WeaponRow {
   HUDIcon: string | null
   IsLowAltDirectWeapon: boolean
   AutoLoaded: boolean
+  /** suppressed weapon — degrades stealth slower (Silent Icon trait) */
+  Silent: boolean
+  /** close-quarters weapon — usable against enemies in the same building (CQC Icon trait) */
+  CQC: boolean
   CanBeMerged: boolean
   AimTimeMin: number
   AimTimeMax: number
@@ -174,7 +180,8 @@ export interface AmmunitionRow {
   DispersionVerticalRadius: number
   DispersionMinimal: number
   GenerateSmoke: boolean
-  Seeker: boolean
+  /** guidance-type code: 0 none, 10 IR/FF, 50 active-radar/FF, 100 semi-active, 200 anti-radar */
+  Seeker: number
   LaserGuided: boolean
   CanBeIntercepted: boolean
   TrajectoryType: number

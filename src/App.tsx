@@ -13,11 +13,12 @@ import { t } from './ui/i18n'
 import './app.css'
 
 export default function App() {
-  const { db, loadError, card, compact, editMode, lang, view, log, pendingAction } = useAppStore()
+  const { db, loadError, card, compact, style, editMode, lang, view, log, pendingAction } = useAppStore()
   const load = useAppStore((s) => s.load)
   const confirmPending = useAppStore((s) => s.confirmPending)
   const cancelPending = useAppStore((s) => s.cancelPending)
   const setCompact = useAppStore((s) => s.setCompact)
+  const setStyle = useAppStore((s) => s.setStyle)
   const setEditMode = useAppStore((s) => s.setEditMode)
   const setView = useAppStore((s) => s.setView)
   const setLang = useAppStore((s) => s.setLang)
@@ -88,15 +89,7 @@ export default function App() {
         {card || isLog ? (
           <>
             <div className="toolbar">
-              <button
-                className={!isLog && !compact ? 'active' : ''}
-                onClick={() => {
-                  setCompact(false)
-                  setView('card')
-                }}
-              >
-                {t(lang, 'expanded')}
-              </button>
+              {/* card layout views + the log workspace */}
               <button
                 className={!isLog && compact ? 'active' : ''}
                 onClick={() => {
@@ -106,14 +99,36 @@ export default function App() {
               >
                 {t(lang, 'compact')}
               </button>
+              <button
+                className={!isLog && !compact ? 'active' : ''}
+                onClick={() => {
+                  setCompact(false)
+                  setView('card')
+                }}
+              >
+                {t(lang, 'expanded')}
+              </button>
               <button className={isLog ? 'active' : ''} onClick={() => setView('log')}>
                 {t(lang, 'logs')}
               </button>
+
+              {/* card style toggle */}
+              {!isLog && (
+                <>
+                  <span className="toolbar-sep" />
+                  <button
+                    className={style === 'legacy' ? 'active' : ''}
+                    title={t(lang, 'legacyHint')}
+                    onClick={() => setStyle(style === 'legacy' ? 'new' : 'legacy')}
+                  >
+                    {t(lang, 'legacy')}
+                  </button>
+                </>
+              )}
+
+              {/* editing tools */}
               <span className="toolbar-sep" />
-              <button
-                className={editMode ? 'active' : ''}
-                onClick={() => setEditMode(!editMode)}
-              >
+              <button className={editMode ? 'active' : ''} onClick={() => setEditMode(!editMode)}>
                 {editMode ? t(lang, 'editing') : t(lang, 'edit')}
               </button>
               {!isLog && (
@@ -129,6 +144,8 @@ export default function App() {
                 </button>
               )}
               <button onClick={isLog ? resetLog : resetEdits}>{t(lang, 'reset')}</button>
+
+              {/* output */}
               <span className="toolbar-sep" />
               {!isLog && <button onClick={saveCard}>{t(lang, 'save')}</button>}
               <button className="primary" onClick={onExport} disabled={exporting}>

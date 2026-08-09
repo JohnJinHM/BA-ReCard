@@ -3,7 +3,7 @@ import type { GameDb } from '../data/db'
 import { loadGameDb } from '../data/db'
 import type { VariantSelection } from '../data/resolve'
 import { resolveCard } from '../data/resolve'
-import type { CardModel } from '../card/model'
+import type { CardModel, CardStyle } from '../card/model'
 import type { LogModel } from '../log/logModel'
 import { emptyLog, emptyLogEntry, logUnitFromCard } from '../log/logModel'
 import type { SavedCard } from './savedCards'
@@ -22,6 +22,10 @@ interface AppState {
   selectedUnitId: number | null
   selection: VariantSelection
   compact: boolean
+  /** card presentation: the current in-game style ('new') or the previous
+   *  card style ('legacy'). Pure display toggle — the model already carries
+   *  everything both styles need. */
+  style: CardStyle
   editMode: boolean
   /** current workspace: unit card or kill-log editor */
   view: View
@@ -45,6 +49,7 @@ interface AppState {
   selectUnit(unitId: number | null): void
   selectOption(modificationId: number, optionId: number): void
   setCompact(compact: boolean): void
+  setStyle(style: CardStyle): void
   setEditMode(on: boolean): void
   setView(view: View): void
   setColorTarget(key: string | null): void
@@ -83,6 +88,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedUnitId: null,
   selection: {},
   compact: true, // the game opens cards in compact mode
+  style: 'new', // the current in-game card style; Legacy is opt-in
 
   editMode: false,
   view: 'card',
@@ -144,6 +150,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setCompact(compact) {
     set({ compact })
+  },
+
+  setStyle(style) {
+    set({ style })
   },
 
   setEditMode(on) {
@@ -209,13 +219,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   saveCard() {
-    const { card, compact, selection } = get()
+    const { card, compact, style, selection } = get()
     if (!card) return
     get().importSavedCard({
       id: newSavedCardId(),
       name: card.name.trim() || 'Untitled',
       savedAt: Date.now(),
       compact,
+      style,
       selection,
       card: structuredClone(card),
     })
@@ -241,6 +252,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       selectedUnitId: entry.card.unitId,
       selection: entry.selection ?? {},
       compact: entry.compact,
+      style: entry.style ?? get().style,
       card: structuredClone(entry.card),
       dirty: false,
       colorTarget: null,
