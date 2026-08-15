@@ -49,14 +49,21 @@ Countries ──< Units >── Type / CategoryType / Role (enums)
 ### Units (475)
 The unit itself: `Id, Name, HUDName, Description (loc key), CountryId, Cost,
 Type, CategoryType, Role, Length/Width/Height, Weight, Stealth, InfantrySlots,
-MaxStress, ContentMembership, DisplayInArmory, IsUnitModification,
-ModelFileName, PortraitFileName, ThumbnailFileName, OriginalName,
-OriginalCost, OwnerInfantryID`.
+MaxStress, TimeModifierRefund, TimeModifierResurrect, ContentMembership,
+DisplayInArmory, IsUnitModification, ModelFileName, PortraitFileName,
+ThumbnailFileName, OriginalName, OriginalCost, OwnerInfantryID`.
 
 - Arsenal roster = `DisplayInArmory && !IsUnitModification && Role !== 0`
   (`Role 0` filters internal spawned entities like "C-17 (takeoff)").
 - `Stealth` is a detection-range divisor; the card displays `1 / Stealth`
   (data 0.8 → shown 1.25).
+- The two `TimeModifier*` columns are **second-offsets on two different
+  delays**, both of which have a cost-scaled base living in `GameConfig`
+  (not in this DB — see [`extracted/PREFAB_LAYOUT.md`](extracted/PREFAB_LAYOUT.md)):
+  `TimeModifierResurrect` offsets the **destroyed** delay the card's clock+skull
+  stat shows (`420 + 1.5 × cost`), while `TimeModifierRefund` offsets the
+  **repurchase** delay of a unit sent home alive (`30 + 0.5 × cost`), which the
+  card does not display. `Options` carry a delta on each.
 - Variant units (e.g. "AAVP MICLIC" vs "AAVP-7A1", "Airborne Snipers 2")
   are separate Unit rows reached via `Options.ReplaceUnitId`.
 
@@ -137,10 +144,16 @@ The variant system. `Modifications (UnitId, Type, UIName loc key, Order)`
 are the customization rows shown under the card ("Weapon package",
 "Armor package"); `Options` are the choices within each.
 
-Option override fields: `Cost, ReplaceUnitId, ReplaceUnitName,
-ConcatenateWithUnitName, ArmorId, MobilityId, MainSensorId, ExtraSensorId,
-StealthOverride, PortraitOverride, ThumbnailOverride, Ability1..3Id,
-Turret0Id .. Turret20Id`.
+Option override fields: `Cost, TimeModifierRefund, TimeModifierResurrect,
+ReplaceUnitId, ReplaceUnitName, ConcatenateWithUnitName, ArmorId, MobilityId,
+MainSensorId, ExtraSensorId, StealthOverride, PortraitOverride,
+ThumbnailOverride, Ability1..3Id, Turret0Id .. Turret20Id`.
+
+Like `Cost`, the two `TimeModifier*` fields are **deltas** on the unit's, and
+accumulate across the modification chain. Only two options in the shipped data
+carry one (AAVP MICLIC's CATFAE loadout, MT-LB's mortar turret) — a variant
+normally moves the return-to-battlegroup timer through its `Cost` delta
+instead, since the delay's base scales with cost.
 
 ---
 
@@ -228,6 +241,16 @@ Weapons group into one card entry with an `×N` mount count:
 Ammo for a merged entry: collect `WeaponAmmunitions` rows for all member
 weapon ids, scale each `Quantity` by that member's mount count, and combine
 rows sharing an `AmmunitionId` (order = min `Order`).
+
+The `×N` badge is the **mount count** everywhere except **aircraft munitions**
+(every ammo row `selfPropelled`, i.e. `TrajectoryType >= 110` — missiles,
+cruise/ballistic missiles, bombs), where it is the **munition total** (the
+summed `Quantity`). Those rows hide their count pill because the weapon icon
+already is the munition, so the badge is the only place the number can appear,
+and one mount carries many: the B-2 Spirit's single bomb-bay slot holds 80
+Mk82s, the A-10C's two triple-rails hold 6 Mavericks, the F-15E's pylons 20
+CBU-87. Plane guns and rocket pods keep their pills, so their badge stays the
+mount count (the A-10C's one GAU-8, ammo ×235).
 
 ### Display formatting
 

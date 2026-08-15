@@ -19,8 +19,13 @@ export interface UnitRow {
   Stealth: number
   InfantrySlots: number
   MaxStress: number
-  /** seconds added to the base "return to battlegroup delay" (0 for most units) */
+  /** seconds added to the *repurchase* delay of a unit sent back to base alive
+   *  (GameConfig RepurchaseDelayFloor + RepurchaseDelayMultiplier × cost) */
   TimeModifierRefund: number
+  /** seconds added to the "return to battlegroup delay" the card shows — the
+   *  clock+skull stat, i.e. the delay after the unit is DESTROYED (GameConfig
+   *  ResurrectDelayFloor + ResurrectDelayMultiplier × cost) */
+  TimeModifierResurrect: number
   ContentMembership: number
   DisplayInArmory: boolean
   IsUnitModification: boolean
@@ -208,6 +213,10 @@ export interface OptionRow {
   ReplaceUnitName: string | null
   ReplaceUnitId: number
   Cost: number
+  /** deltas on the unit's own offsets; only a couple of options carry them
+   *  (AAVP MICLIC's CATFAE loadout, MT-LB's mortar turret) */
+  TimeModifierRefund: number
+  TimeModifierResurrect: number
   OptionPicture: string | null
   ThumbnailOverride: string | null
   PortraitOverride: string | null

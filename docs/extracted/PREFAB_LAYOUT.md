@@ -3,6 +3,12 @@
 Source: AssetRipper export at `C:\Users\jinha\Desktop\Temp\BA\ExportedProject\Assets\Prefabs\GUI\Arsenal\Infocard\`
 Unity 2022.3, uGUI + TextMeshPro. Extracted 2026-07-01 by parsing prefab YAML.
 Refreshed against game build **1.1.1.1** (export `C:\Users\jinha\Desktop\Export\ExportedProject`).
+Re-checked against build **1.1.1.2** (export
+`C:\Users\jinha\Desktop\Temp\AssetRipper_export_20260815_163009`), which is where
+the gameplay `GameConfig` numbers below come from. That build is IL2CPP: the
+`Plugins/BrokenArrow.dll` AssetRipper writes is a **stub** — type, field and
+method *names* are intact but every body is empty — so config `.asset` values
+and member names are readable, formulas are not.
 
 ## New-style card additions (build 1.1.1.1)
 
@@ -13,10 +19,38 @@ Ground truth = the reference shots in `/samples`.
 
 - **Return-to-battlegroup timer** — an 8th stat appended to the stats strip
   (icon `DeathTimer`, clock+skull), the `ui_infocard_refund` "Return to
-  battlegroup delay". The base delay is **not** in the extracted DB (only the
-  per-unit `Units.TimeModifierRefund` second-offset is), so the app shows
-  `RTB_BASE_SECONDS (585) + TimeModifierRefund` as `M:SS` — exact for the
-  infantry reference (Spetsnaz, modifier 0 → 9:45) and editable per card.
+  battlegroup delay". It is the **destroyed** case of that stat
+  (`RefundTimeOptions.IsDead`; the sibling `ui_infocard_refund_unscathed` /
+  `_noammo` cases are the alive-return paths), computed by
+  `Economy.Systems.RefundSystem.GetPurchaseDelay` from GameConfig's
+  **"Destroyed units"** block — `Assets/MonoBehaviour/GameConfig.asset` in the
+  AssetRipper export:
+
+  ```
+  ResurrectDelayFloor (420) + ResurrectDelayMultiplier (1.5) × cost
+                            + TimeModifierResurrect
+  ```
+
+  so the delay **scales with the unit's cost** and every variant that moves the
+  cost moves the timer with it (BMP-3 + Epokha module 65 → 110 pts = 6:37 →
+  7:45); the app feeds it the same resolved loadout cost the card prints.
+  `Units.TimeModifierResurrect` is a per-unit second-offset (−240 on cheap
+  infantry, +360 on HIMARS) that the chosen `Options` add their own delta to
+  (AAVP MICLIC's CATFAE +400). `PlanesDeathPenalty` is 0, so aircraft use the
+  same formula. Exact for the infantry reference (Spetsnaz GRU, 110 pts,
+  modifier 0 → 420 + 165 = 585 s = 9:45); still editable per card.
+  > `TimeModifierRefund` is **not** this stat — it offsets the *repurchase*
+  > delay of a unit returned to base alive (`RepurchaseDelayFloor` 30 +
+  > `RepurchaseDelayMultiplier` 0.5 × cost). The app used it until the
+  > 1.1.1.1 export settled the two apart; it read correctly only because the
+  > reference unit has both modifiers at 0.
+  >
+  > Note `GameConfig_0.asset` carries a **different** tuning (floor 240,
+  > multiplier 0.5) and is not the live one — 240 + 0.5 × 110 = 295 s ≠ 9:45.
+  >
+  > The seconds are **truncated** to `M:SS`; the ×1.5 term half-steps on every
+  > odd-priced unit and the game's own formatter is not recoverable (the
+  > IL2CPP export's method bodies are stubs).
 - **Weapon trait icons** — the new `Weapons.CQC` and `Weapons.Silent` flags add
   two icons, CQC first and Suppressed to its right (`CQC Icon`/`Silent Icon`).
   On the **compact silhouette overlay** they render green (`#7CFF81`); in the
@@ -43,6 +77,11 @@ Ground truth = the reference shots in `/samples`.
   pills in compact (only the centered guidance icons, if any), and no silhouette
   in expanded. **Guns and rockets** (TrajectoryType 10 Direct, incl. S-8/Hydra)
   keep their silhouette and pills, as do all ground/heli weapons.
+  Because the count pill is gone, the **weapon `×N` badge carries the munition
+  total** for those rows, not the pylon/rack count: one mount can hold many
+  (B-2 = 1 bomb-bay slot / 80 Mk82, A-10C = 2 triple-rails / 6 Mavericks,
+  Tu-22M3 = 1 bay / 33 FAB-250). Weapons that keep their pills keep the mount
+  count.
 - **Compact weapon-trait colors** — the compact silhouette overlay uses the
   pre-colored "new" trait sprites via `TraitChip.compactIcon`: the "can't shoot
   on the move" marker is the **red** `CantShootOnTheMove` sign and the autoloader

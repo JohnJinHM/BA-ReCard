@@ -36,11 +36,23 @@ export type VariantSelection = Record<number, number>
 // 1000; matches the 750/1000/1500 pattern for 6/8/12-man squads).
 const INFANTRY_WEIGHT_PER_SOLDIER = 125
 
-// "Return to battlegroup delay" (the clock+skull stat). The base delay isn't in
-// the extracted DB (only the per-unit TimeModifierRefund offset is), so this is
-// calibrated to the in-game reference cards (Spetsnaz, modifier 0 → 9:45); the
-// value stays editable on the card. New-style only.
-const RTB_BASE_SECONDS = 585
+// "Return to battlegroup delay" (the clock+skull stat) — the delay before a
+// DESTROYED unit comes back, which the game computes as RefundTimeOptions.IsDead
+// in Economy.Systems.RefundSystem.GetPurchaseDelay. Its inputs are GameConfig's
+// "Destroyed units" block (Assets/MonoBehaviour/GameConfig.asset):
+//
+//     ResurrectDelayFloor + ResurrectDelayMultiplier × cost + TimeModifierResurrect
+//
+// so the delay **scales with the unit's cost**, and every variant that moves the
+// cost moves the timer with it. TimeModifierResurrect is a per-unit second-offset
+// that the chosen options add to (AAVP MICLIC's CATFAE loadout +400 s); its
+// sibling TimeModifierRefund belongs to the *repurchase* path (a unit returned to
+// base alive, RepurchaseDelayFloor 30 + 0.5 × cost) and is NOT this stat.
+// PlanesDeathPenalty is 0, so aircraft use the same formula.
+// Checks out against the in-game reference card: Spetsnaz GRU, 110 pts,
+// modifier 0 → 420 + 1.5 × 110 = 585 s = 9:45. New-style only; editable per card.
+const RTB_DELAY_FLOOR = 420
+const RTB_COST_MULTIPLIER = 1.5
 
 /** Green highlight used for the CQC/Suppressed weapon icons. */
 const TRAIT_GREEN = '#7cff81'
@@ -107,6 +119,9 @@ interface ResolvedLoadout {
   slots: Map<number, number>
   stealth: number
   portraitFile: string | null
+  /** TimeModifierResurrect seconds: the unit's offset plus every chosen
+   *  option's own offset */
+  returnDelay: number
 }
 
 function pickDefault<T extends { IsDefault: boolean }>(rows: T[]): T | null {
@@ -139,6 +154,7 @@ function resolveBase(db: GameDb, unit: UnitRow): ResolvedLoadout {
     slots: turretSlotsOf(db, unit),
     stealth: unit.Stealth,
     portraitFile: unit.PortraitFileName,
+    returnDelay: unit.TimeModifierResurrect ?? 0,
   }
 }
 
@@ -250,6 +266,9 @@ function applyOption(db: GameDb, loadout: ResolvedLoadout, opt: OptionRow): Reso
   if (opt.MobilityId) out.mobility = db.mobility.get(opt.MobilityId) ?? out.mobility
   if (opt.StealthOverride) out.stealth = opt.StealthOverride
   if (opt.PortraitOverride) out.portraitFile = opt.PortraitOverride
+  // Like Cost, the option's resurrect offset is a delta on the unit's, and
+  // options accumulate across the modification chain.
+  if (opt.TimeModifierResurrect) out.returnDelay = loadout.returnDelay + opt.TimeModifierResurrect
 
   const sensorOverrides: SensorRow[] = []
   if (opt.MainSensorId) {
@@ -466,14 +485,18 @@ function buildCardModel(db: GameDb, lo: ResolvedLoadout, weaponRows: WeaponRow[]
     tags,
     weapons,
     squadSize: squad.length > 0 ? String(squad.length) : '',
-    deathTimer: fmtDuration(RTB_BASE_SECONDS + (unit.TimeModifierRefund ?? 0)),
+    deathTimer: fmtDuration(RTB_DELAY_FLOOR + RTB_COST_MULTIPLIER * lo.cost + lo.returnDelay),
     aircraft: isAir,
   }
 }
 
-/** Seconds → "M:SS" for the return-to-battlegroup delay stat. */
+/** Seconds → "M:SS" for the return-to-battlegroup delay stat. Truncated, as a
+ *  clock is: the 1.5 × cost term lands on a half-second for every odd-priced
+ *  unit. (Truncation is the conventional TimeSpan/timer rendering; the game's
+ *  own formatter isn't recoverable from the IL2CPP export, whose method bodies
+ *  are stubs, and the reference card's 585 s is whole either way.) */
 function fmtDuration(totalSeconds: number): string {
-  const s = Math.max(0, Math.round(totalSeconds))
+  const s = Math.max(0, Math.floor(totalSeconds))
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
@@ -577,6 +600,7 @@ function abilityChips(
 
 function buildWeaponModel(db: GameDb, unit: UnitRow, mw: MergedWeapon): WeaponModel {
   const { weapon: w, count, members } = mw
+  const isAir = (unit.Type & UnitType.Aircraft) !== 0
 
   // Collect ammo across all member weapon rows; quantities are per mount, so
   // scale by mounts and combine rows sharing the same ammunition
@@ -644,18 +668,31 @@ function buildWeaponModel(db: GameDb, unit: UnitRow, mw: MergedWeapon): WeaponMo
       value: `${minMax(w.MagazineReloadTimeMin, w.MagazineReloadTimeMax)} sec`,
     })
 
+  const ammo = ammoRows.map((r) => {
+    const a = db.ammunitions.get(r.ammunitionId)
+    return buildAmmoModel(db, a ?? null, r.quantity)
+  })
+
+  // A plane's missiles/bombs hide their ammo count pill (the weapon icon
+  // already IS the munition — see AmmoModel.selfPropelled), so the weapon badge
+  // has to carry the munition TOTAL, not the number of pylons it hangs on: one
+  // rack holds several bombs (B-2 → a single bomb-bay slot with 80 Mk82s,
+  // A-10C → 2 triple-rails with 6 Mavericks). Guns and rocket pods keep their
+  // pills, so their badge stays the mount count.
+  const badge =
+    isAir && ammo.length > 0 && ammo.every((a) => a.selfPropelled)
+      ? ammoRows.reduce((sum, r) => sum + r.quantity, 0)
+      : count
+
   return {
     icon: w.HUDIcon,
     name: db.cardLoc(w.HUDName) || w.Name || 'Weapon',
-    count: count > 1 ? `x${count}` : '',
+    count: badge > 1 ? `x${fmtInt(badge)}` : '',
     typeLabel: db.cardLocOr(WeaponTypeLocKey[w.Type], WeaponType[w.Type] ?? ''),
     traits,
     newTraits,
     stats,
-    ammo: ammoRows.map((r) => {
-      const a = db.ammunitions.get(r.ammunitionId)
-      return buildAmmoModel(db, a ?? null, r.quantity)
-    }),
+    ammo,
   }
 }
 
