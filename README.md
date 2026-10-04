@@ -1,5 +1,7 @@
 # [BA-ReCard](https://johnjinhm.github.io/BA-ReCard/)
 
+**Data build: 1.2.0.3** — 540 units, 24 tables, 16,687 rows; includes DLC3 Russian Guard.
+
 Reconstruct Broken Arrow's **unit info cards** — render a faithful card from
 unit data, support manual edits and image import, and export to PNG.
 
@@ -36,6 +38,7 @@ docs/
 npm install
 npm run dev        # http://localhost:5173/BA-ReCard/
 npm run build      # type-check + production build to dist/
+npm run verify     # every unit/option, defaults, localization and asset paths
 npm run deploy     # build + publish dist/ to the gh-pages branch
 ```
 
@@ -46,7 +49,11 @@ node scripts/extract-assets.mjs <path-to-ExportedProject>
 ```
 
 To refresh the database, run [BA-Units](https://github.com/JohnJinHM/BA-Units)
-and replace `public/data/`.
+and replace `public/data/`, including `database.json` and the manifest. Refresh
+assets afterward, then run `npm run verify` and `npm run build`.
+
+With the built app served on a local preview, run `node scripts/e2e-refresh.mjs <url>`
+to check DLC3 cards, default loadouts and PNG export in a browser.
 
 ## How it works
 

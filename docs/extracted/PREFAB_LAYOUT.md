@@ -12,6 +12,14 @@ and member names are readable, formulas are not.
 
 ## New-style card additions (build 1.1.1.1)
 
+Build **1.2.0.3** was checked against the export at
+`C:/Users/jinha/Desktop/Temp/ba/ExportedProject`: the main gameplay
+`GameConfig.asset` still uses `ResurrectDelayFloor = 420`,
+`ResurrectDelayMultiplier = 1.5` and `PlanesDeathPenalty = 0`.
+`Infocard Config.asset` still has `EffectiveRangeMultiplier = 2` and
+`RoundDigits = 2`. `GameConfig_0.asset` has different timing values and is
+not the main gameplay configuration used by this card model.
+
 The current in-game info card adds a few elements the original layout above did
 not render. These are the "new" card style; the app keeps the older look as a
 selectable **Legacy** style (`state.style`), which renders exactly as before.

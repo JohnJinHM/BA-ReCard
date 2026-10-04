@@ -1,5 +1,11 @@
 # [BA-ReCard](https://johnjinhm.github.io/BA-ReCard/)
 
+**数据库版本：1.2.0.3** — 540 个单位、24 张表、16,687 条记录，包含 DLC3 俄罗斯近卫军。
+
+更新数据后运行 `npm run verify` 与 `npm run build`，检查全部单位、配装选项、
+默认装备和图片路径。生产预览启动后，可运行
+`node scripts/e2e-refresh.mjs <预览地址>` 验证 DLC3 卡片及 PNG 导出。
+
 复刻《断箭》(Broken Arrow) 的**单位信息卡**——
 根据单位数据还原卡面，支持手动编辑与导入图片，并导出为 PNG。
 

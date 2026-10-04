@@ -5,6 +5,17 @@ Source: AssetRipper export of Broken Arrow (Unity 2022.3) at
 
 All paths below are relative to `C:\Users\jinha\Desktop\Temp\BA\ExportedProject\` unless absolute.
 
+> **Build 1.2.0.3 refresh:** the current export is
+> `C:/Users/jinha/Desktop/Temp/ba/ExportedProject`. DLC3 weapon, ammunition and
+> label sprites are siblings of `Icons/` under their respective image roots.
+> The extractor scans these roots recursively, preserves `outline/` for
+> thumbnails and excludes outline silhouettes from the standard weapon art.
+> Portrait extraction also includes the root-level WIP placeholder images.
+> Four bare portrait references (`TOS2_TOSOCHKA`, `YAK130`, `SHCHUKA`,
+> `2S43_MALVA`) resolve to `DLC3/<name>/<name>.webp` in `src/assets.ts`.
+> `VEH_MilanER` now has its own sprite; the old Milan fallback is removed.
+> `npm run verify` checks every unit/option and asset names with exact casing.
+
 > **Build 1.1.1.1 refresh (2026-08):** re-run against
 > `C:\Users\jinha\Desktop\Export\ExportedProject`. New card-relevant sprites:
 > `Icons for weapon/CQC Icon` + `Silent Icon` (weapon traits, tinted green in

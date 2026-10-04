@@ -337,11 +337,13 @@ export function resolveCard(
   const baseCost = unit.Cost
 
   const mods = [...(db.unitModifications.get(unitId) ?? [])].sort(
-    (a, b) => a.Order - b.Order,
+    (a, b) => a.Order - b.Order || a.Id - b.Id,
   )
   const chosen: OptionRow[] = []
   for (const mod of mods) {
-    const opts = db.modificationOptions.get(mod.Id) ?? []
+    const opts = [...(db.modificationOptions.get(mod.Id) ?? [])].sort(
+      (a, b) => a.Order - b.Order || a.Id - b.Id,
+    )
     const sel = selection[mod.Id]
     const opt = opts.find((o) => o.Id === sel) ?? opts.find((o) => o.IsDefault) ?? opts[0]
     if (opt) chosen.push(opt)

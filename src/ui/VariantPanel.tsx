@@ -17,7 +17,7 @@ export function VariantPanel() {
 
   if (!db || unitId == null) return null
   const mods = [...(db.unitModifications.get(unitId) ?? [])].sort(
-    (a, b) => a.Order - b.Order,
+    (a, b) => a.Order - b.Order || a.Id - b.Id,
   )
   if (mods.length === 0) return null
 
@@ -26,7 +26,7 @@ export function VariantPanel() {
       <h3>{t(lang, 'variants')}</h3>
       {mods.map((mod) => {
         const opts = [...(db.modificationOptions.get(mod.Id) ?? [])].sort(
-          (a, b) => a.Order - b.Order,
+          (a, b) => a.Order - b.Order || a.Id - b.Id,
         )
         const current =
           selection[mod.Id] ??

@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "verify": "node scripts/verify-data.mjs",
+    "e2e:refresh": "node scripts/e2e-refresh.mjs",
+    "extract-assets": "node scripts/extract-assets.mjs",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"

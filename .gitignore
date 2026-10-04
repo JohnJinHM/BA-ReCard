@@ -24,4 +24,6 @@ dist-ssr
 *.sw?
 
 /samples
-/scripts
+/scripts/*
+!/scripts/verify-data.mjs
+!/scripts/e2e-refresh.mjs
