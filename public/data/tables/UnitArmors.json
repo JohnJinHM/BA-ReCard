@@ -3345,21 +3345,6 @@
     "ArmorId": 431
   },
   {
-    "Id": 1167,
-    "UnitId": 146,
-    "ArmorId": 273
-  },
-  {
-    "Id": 1168,
-    "UnitId": 57,
-    "ArmorId": 83
-  },
-  {
-    "Id": 1169,
-    "UnitId": 371,
-    "ArmorId": 83
-  },
-  {
     "Id": 1170,
     "UnitId": 370,
     "ArmorId": 83
@@ -3368,11 +3353,6 @@
     "Id": 1171,
     "UnitId": 637,
     "ArmorId": 431
-  },
-  {
-    "Id": 1175,
-    "UnitId": 638,
-    "ArmorId": 83
   },
   {
     "Id": 1177,
@@ -3553,5 +3533,50 @@
     "Id": 1367,
     "UnitId": 706,
     "ArmorId": 85
+  },
+  {
+    "Id": 1395,
+    "UnitId": 707,
+    "ArmorId": 83
+  },
+  {
+    "Id": 1396,
+    "UnitId": 57,
+    "ArmorId": 82
+  },
+  {
+    "Id": 1397,
+    "UnitId": 708,
+    "ArmorId": 273
+  },
+  {
+    "Id": 1398,
+    "UnitId": 146,
+    "ArmorId": 275
+  },
+  {
+    "Id": 1399,
+    "UnitId": 638,
+    "ArmorId": 82
+  },
+  {
+    "Id": 1400,
+    "UnitId": 371,
+    "ArmorId": 82
+  },
+  {
+    "Id": 1403,
+    "UnitId": 711,
+    "ArmorId": 512
+  },
+  {
+    "Id": 1436,
+    "UnitId": 713,
+    "ArmorId": 246
+  },
+  {
+    "Id": 1437,
+    "UnitId": 710,
+    "ArmorId": 519
   }
 ]

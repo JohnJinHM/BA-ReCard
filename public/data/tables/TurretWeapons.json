@@ -72,6 +72,14 @@
     "WeaponPriority": 0
   },
   {
+    "Id": 16,
+    "WeaponId": 611,
+    "TurretId": 14,
+    "Order": 0,
+    "WeaponChannel": 0,
+    "WeaponPriority": 0
+  },
+  {
     "Id": 25,
     "WeaponId": 17,
     "TurretId": 17,
@@ -7224,14 +7232,6 @@
     "WeaponPriority": 0
   },
   {
-    "Id": 1202,
-    "WeaponId": 611,
-    "TurretId": 837,
-    "Order": 0,
-    "WeaponChannel": 0,
-    "WeaponPriority": 0
-  },
-  {
     "Id": 1203,
     "WeaponId": 104,
     "TurretId": 838,
@@ -10227,6 +10227,30 @@
     "Id": 1923,
     "WeaponId": 1027,
     "TurretId": 1416,
+    "Order": 0,
+    "WeaponChannel": 0,
+    "WeaponPriority": 0
+  },
+  {
+    "Id": 1927,
+    "WeaponId": 1028,
+    "TurretId": 1418,
+    "Order": 0,
+    "WeaponChannel": 0,
+    "WeaponPriority": 0
+  },
+  {
+    "Id": 1928,
+    "WeaponId": 1029,
+    "TurretId": 837,
+    "Order": 0,
+    "WeaponChannel": 0,
+    "WeaponPriority": 0
+  },
+  {
+    "Id": 1929,
+    "WeaponId": 1032,
+    "TurretId": 1419,
     "Order": 0,
     "WeaponChannel": 0,
     "WeaponPriority": 0

@@ -5533,5 +5533,23 @@
     "UIName": "Custom_Slot_Ammunition",
     "ThumbnailFileName": null,
     "Order": 0
+  },
+  {
+    "Id": 814,
+    "UnitId": 57,
+    "Name": "Squad Mech. Riflemen ",
+    "Type": 7,
+    "UIName": "Custom_Slot_Squad_loadout",
+    "ThumbnailFileName": null,
+    "Order": 0
+  },
+  {
+    "Id": 815,
+    "UnitId": 146,
+    "Name": "Squad Mech. Engineers",
+    "Type": 7,
+    "UIName": "Custom_Slot_Squad_loadout",
+    "ThumbnailFileName": null,
+    "Order": 0
   }
 ]

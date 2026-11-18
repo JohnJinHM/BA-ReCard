@@ -5,6 +5,13 @@ Source: AssetRipper export of Broken Arrow (Unity 2022.3) at
 
 All paths below are relative to `C:\Users\jinha\Desktop\Temp\BA\ExportedProject\` unless absolute.
 
+> **Build 1.2.2.1 refresh:** selected UI textures and fonts were exported from
+> the installed Unity 6000.3.24f1 build using AssetRipper's HTTP API to
+> `C:/Users/jinha/Desktop/Temp/ba-refresh-20261118/ExportedProject`, preserving
+> their original asset paths. The existing extraction scripts process this
+> directory. See BA-Units `docs/EXTRACTION.md` for database selection and version
+> provenance.
+
 > **Build 1.2.0.3 refresh:** the current export is
 > `C:/Users/jinha/Desktop/Temp/ba/ExportedProject`. DLC3 weapon, ammunition and
 > label sprites are siblings of `Icons/` under their respective image roots.

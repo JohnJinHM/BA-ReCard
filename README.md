@@ -1,6 +1,6 @@
 # [BA-ReCard](https://johnjinhm.github.io/BA-ReCard/)
 
-**Data build: 1.2.0.3** — 540 units, 24 tables, 16,687 rows; includes DLC3 Russian Guard.
+**Data build: 1.2.2.1** — 545 units, 24 tables, 16,805 rows; includes DLC3 Russian Guard.
 
 Reconstruct Broken Arrow's **unit info cards** — render a faithful card from
 unit data, support manual edits and image import, and export to PNG.

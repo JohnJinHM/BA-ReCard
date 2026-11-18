@@ -2201,7 +2201,7 @@
   },
   {
     "Id": 397,
-    "DeathPriority": 3,
+    "DeathPriority": 4,
     "ModelFileName": "US_Army_Engineer_officer",
     "PrimaryWeaponId": 50,
     "SpecialWeaponId": 0,
@@ -2209,7 +2209,7 @@
   },
   {
     "Id": 398,
-    "DeathPriority": 2,
+    "DeathPriority": 3,
     "ModelFileName": "US_Army_Engineer_rifle1",
     "PrimaryWeaponId": 199,
     "SpecialWeaponId": 200,
@@ -2217,7 +2217,7 @@
   },
   {
     "Id": 399,
-    "DeathPriority": 3,
+    "DeathPriority": 4,
     "ModelFileName": "US_Army_Engineer_rifle2",
     "PrimaryWeaponId": 50,
     "SpecialWeaponId": 200,
@@ -2228,14 +2228,6 @@
     "DeathPriority": 2,
     "ModelFileName": "US_Army_Engineer_rifle1",
     "PrimaryWeaponId": 199,
-    "SpecialWeaponId": 200,
-    "UnitId": 146
-  },
-  {
-    "Id": 401,
-    "DeathPriority": 3,
-    "ModelFileName": "US_Army_Engineer_rifle2",
-    "PrimaryWeaponId": 50,
     "SpecialWeaponId": 200,
     "UnitId": 146
   },
@@ -2489,7 +2481,7 @@
   },
   {
     "Id": 435,
-    "DeathPriority": 2,
+    "DeathPriority": 3,
     "ModelFileName": "US_Army_granade",
     "PrimaryWeaponId": 50,
     "SpecialWeaponId": 58,
@@ -2505,16 +2497,8 @@
   },
   {
     "Id": 437,
-    "DeathPriority": 1,
-    "ModelFileName": "US_Army_officer",
-    "PrimaryWeaponId": 50,
-    "SpecialWeaponId": 59,
-    "UnitId": 57
-  },
-  {
-    "Id": 438,
     "DeathPriority": 3,
-    "ModelFileName": "US_Army_rifle",
+    "ModelFileName": "US_Army_officer",
     "PrimaryWeaponId": 50,
     "SpecialWeaponId": 59,
     "UnitId": 57
@@ -4136,17 +4120,9 @@
     "UnitId": 371
   },
   {
-    "Id": 670,
-    "DeathPriority": 4,
-    "ModelFileName": "US_Army_officer",
-    "PrimaryWeaponId": 50,
-    "SpecialWeaponId": 0,
-    "UnitId": 371
-  },
-  {
     "Id": 671,
     "DeathPriority": 3,
-    "ModelFileName": "US_Army_radio",
+    "ModelFileName": "US_Army_officer",
     "PrimaryWeaponId": 50,
     "SpecialWeaponId": 0,
     "UnitId": 371
@@ -6068,7 +6044,7 @@
     "DeathPriority": 2,
     "ModelFileName": "US_Army_Engineer_rifle2",
     "PrimaryWeaponId": 199,
-    "SpecialWeaponId": 200,
+    "SpecialWeaponId": 1031,
     "UnitId": 449
   },
   {
@@ -6076,7 +6052,7 @@
     "DeathPriority": 2,
     "ModelFileName": "US_Army_Engineer_rifle1",
     "PrimaryWeaponId": 199,
-    "SpecialWeaponId": 200,
+    "SpecialWeaponId": 1031,
     "UnitId": 449
   },
   {
@@ -6084,7 +6060,7 @@
     "DeathPriority": 3,
     "ModelFileName": "US_Army_Engineer_officer",
     "PrimaryWeaponId": 50,
-    "SpecialWeaponId": 200,
+    "SpecialWeaponId": 1031,
     "UnitId": 449
   },
   {
@@ -6092,7 +6068,7 @@
     "DeathPriority": 1,
     "ModelFileName": "US_Army_Engineer_rifle2",
     "PrimaryWeaponId": 50,
-    "SpecialWeaponId": 200,
+    "SpecialWeaponId": 1031,
     "UnitId": 449
   },
   {
@@ -6100,7 +6076,7 @@
     "DeathPriority": 4,
     "ModelFileName": "US_Army_Engineer_rifle2",
     "PrimaryWeaponId": 50,
-    "SpecialWeaponId": 200,
+    "SpecialWeaponId": 1031,
     "UnitId": 449
   },
   {
@@ -6652,7 +6628,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker1",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6660,7 +6636,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker2",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6668,7 +6644,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker1",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6676,7 +6652,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker3",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6684,7 +6660,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker1",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6692,7 +6668,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker4",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6700,7 +6676,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker2",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6708,7 +6684,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker1",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6716,7 +6692,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker1",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6724,7 +6700,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker4",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6732,7 +6708,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker2",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6740,7 +6716,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker4",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6748,7 +6724,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker3",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6756,7 +6732,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Walker3",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 490
   },
   {
@@ -6764,7 +6740,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Runner1",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 491
   },
   {
@@ -6772,7 +6748,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Runner1",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 491
   },
   {
@@ -6780,7 +6756,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Runner1",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 491
   },
   {
@@ -6788,7 +6764,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Runner3",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 491
   },
   {
@@ -6796,7 +6772,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Runner3",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 491
   },
   {
@@ -6804,7 +6780,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Runner2",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 491
   },
   {
@@ -6812,7 +6788,7 @@
     "DeathPriority": 0,
     "ModelFileName": "ZOM_Runner2",
     "PrimaryWeaponId": 726,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 1035,
     "UnitId": 491
   },
   {
@@ -8484,15 +8460,15 @@
     "DeathPriority": 3,
     "ModelFileName": "US_Army_Engineer_rifle2",
     "PrimaryWeaponId": 50,
-    "SpecialWeaponId": 0,
+    "SpecialWeaponId": 200,
     "UnitId": 146
   },
   {
     "Id": 1416,
-    "DeathPriority": 2,
+    "DeathPriority": 1,
     "ModelFileName": "US_Army_granade",
     "PrimaryWeaponId": 50,
-    "SpecialWeaponId": 58,
+    "SpecialWeaponId": 59,
     "UnitId": 57
   },
   {
@@ -8552,14 +8528,6 @@
     "UnitId": 638
   },
   {
-    "Id": 1432,
-    "DeathPriority": 3,
-    "ModelFileName": "US_Army_rifle",
-    "PrimaryWeaponId": 50,
-    "SpecialWeaponId": 0,
-    "UnitId": 638
-  },
-  {
     "Id": 1433,
     "DeathPriority": 3,
     "ModelFileName": "US_Army_rifle",
@@ -8577,7 +8545,7 @@
   },
   {
     "Id": 1435,
-    "DeathPriority": 4,
+    "DeathPriority": 2,
     "ModelFileName": "RU_Motostrelki_MG",
     "PrimaryWeaponId": 30,
     "SpecialWeaponId": 0,
@@ -8601,7 +8569,7 @@
   },
   {
     "Id": 1438,
-    "DeathPriority": 4,
+    "DeathPriority": 2,
     "ModelFileName": "RU_Motostrelki_rifle",
     "PrimaryWeaponId": 29,
     "SpecialWeaponId": 0,
@@ -8609,7 +8577,7 @@
   },
   {
     "Id": 1439,
-    "DeathPriority": 4,
+    "DeathPriority": 3,
     "ModelFileName": "RU_Motostrelki_rifle",
     "PrimaryWeaponId": 29,
     "SpecialWeaponId": 0,
@@ -9070,5 +9038,133 @@
     "PrimaryWeaponId": 50,
     "SpecialWeaponId": 65,
     "UnitId": 706
+  },
+  {
+    "Id": 1645,
+    "DeathPriority": 3,
+    "ModelFileName": "US_Army_granade",
+    "PrimaryWeaponId": 50,
+    "SpecialWeaponId": 58,
+    "UnitId": 707
+  },
+  {
+    "Id": 1646,
+    "DeathPriority": 2,
+    "ModelFileName": "US_Army_MG",
+    "PrimaryWeaponId": 60,
+    "SpecialWeaponId": 0,
+    "UnitId": 707
+  },
+  {
+    "Id": 1647,
+    "DeathPriority": 1,
+    "ModelFileName": "US_Army_Weapon",
+    "PrimaryWeaponId": 50,
+    "SpecialWeaponId": 1030,
+    "UnitId": 707
+  },
+  {
+    "Id": 1648,
+    "DeathPriority": 3,
+    "ModelFileName": "US_Army_rifle",
+    "PrimaryWeaponId": 50,
+    "SpecialWeaponId": 0,
+    "UnitId": 707
+  },
+  {
+    "Id": 1650,
+    "DeathPriority": 2,
+    "ModelFileName": "US_Army_MG",
+    "PrimaryWeaponId": 60,
+    "SpecialWeaponId": 0,
+    "UnitId": 707
+  },
+  {
+    "Id": 1651,
+    "DeathPriority": 4,
+    "ModelFileName": "US_Army_radio",
+    "PrimaryWeaponId": 50,
+    "SpecialWeaponId": 0,
+    "UnitId": 707
+  },
+  {
+    "Id": 1652,
+    "DeathPriority": 4,
+    "ModelFileName": "US_Army_granade",
+    "PrimaryWeaponId": 50,
+    "SpecialWeaponId": 58,
+    "UnitId": 707
+  },
+  {
+    "Id": 1653,
+    "DeathPriority": 3,
+    "ModelFileName": "US_Army_Engineer_officer",
+    "PrimaryWeaponId": 50,
+    "SpecialWeaponId": 0,
+    "UnitId": 708
+  },
+  {
+    "Id": 1654,
+    "DeathPriority": 3,
+    "ModelFileName": "US_Army_Engineer_rifle1",
+    "PrimaryWeaponId": 199,
+    "SpecialWeaponId": 212,
+    "UnitId": 708
+  },
+  {
+    "Id": 1655,
+    "DeathPriority": 2,
+    "ModelFileName": "US_Army_Engineer_rifle2",
+    "PrimaryWeaponId": 199,
+    "SpecialWeaponId": 212,
+    "UnitId": 708
+  },
+  {
+    "Id": 1656,
+    "DeathPriority": 2,
+    "ModelFileName": "US_Army_Engineer_rifle1",
+    "PrimaryWeaponId": 199,
+    "SpecialWeaponId": 212,
+    "UnitId": 708
+  },
+  {
+    "Id": 1657,
+    "DeathPriority": 1,
+    "ModelFileName": "US_Army_Engineer_rifle2",
+    "PrimaryWeaponId": 50,
+    "SpecialWeaponId": 212,
+    "UnitId": 708
+  },
+  {
+    "Id": 1659,
+    "DeathPriority": 2,
+    "ModelFileName": "US_Army_Engineer_rifle2",
+    "PrimaryWeaponId": 50,
+    "SpecialWeaponId": 212,
+    "UnitId": 708
+  },
+  {
+    "Id": 1660,
+    "DeathPriority": 3,
+    "ModelFileName": "US_Army_Engineer_rifle2",
+    "PrimaryWeaponId": 50,
+    "SpecialWeaponId": 212,
+    "UnitId": 708
+  },
+  {
+    "Id": 1661,
+    "DeathPriority": 0,
+    "ModelFileName": "ZOM_ArmouredZombie1",
+    "PrimaryWeaponId": 1033,
+    "SpecialWeaponId": 1034,
+    "UnitId": 711
+  },
+  {
+    "Id": 1662,
+    "DeathPriority": 0,
+    "ModelFileName": "Miller",
+    "PrimaryWeaponId": 74,
+    "SpecialWeaponId": 0,
+    "UnitId": 713
   }
 ]

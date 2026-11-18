@@ -1100,51 +1100,6 @@
     "AbilityId": 4
   },
   {
-    "Id": 690,
-    "UnitId": 278,
-    "AbilityId": 89
-  },
-  {
-    "Id": 691,
-    "UnitId": 340,
-    "AbilityId": 89
-  },
-  {
-    "Id": 692,
-    "UnitId": 76,
-    "AbilityId": 89
-  },
-  {
-    "Id": 694,
-    "UnitId": 68,
-    "AbilityId": 89
-  },
-  {
-    "Id": 695,
-    "UnitId": 333,
-    "AbilityId": 89
-  },
-  {
-    "Id": 696,
-    "UnitId": 124,
-    "AbilityId": 89
-  },
-  {
-    "Id": 697,
-    "UnitId": 347,
-    "AbilityId": 89
-  },
-  {
-    "Id": 698,
-    "UnitId": 115,
-    "AbilityId": 89
-  },
-  {
-    "Id": 699,
-    "UnitId": 348,
-    "AbilityId": 89
-  },
-  {
     "Id": 701,
     "UnitId": 325,
     "AbilityId": 90
@@ -2240,11 +2195,6 @@
     "AbilityId": 81
   },
   {
-    "Id": 1005,
-    "UnitId": 341,
-    "AbilityId": 89
-  },
-  {
     "Id": 1007,
     "UnitId": 382,
     "AbilityId": 5
@@ -2348,11 +2298,6 @@
     "Id": 1030,
     "UnitId": 40,
     "AbilityId": 82
-  },
-  {
-    "Id": 1031,
-    "UnitId": 339,
-    "AbilityId": 89
   },
   {
     "Id": 1032,
@@ -2618,16 +2563,6 @@
     "Id": 1090,
     "UnitId": 526,
     "AbilityId": 11
-  },
-  {
-    "Id": 1092,
-    "UnitId": 530,
-    "AbilityId": 89
-  },
-  {
-    "Id": 1094,
-    "UnitId": 529,
-    "AbilityId": 89
   },
   {
     "Id": 1095,
@@ -3273,5 +3208,95 @@
     "Id": 1838,
     "UnitId": 706,
     "AbilityId": 90
+  },
+  {
+    "Id": 1839,
+    "UnitId": 115,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1840,
+    "UnitId": 348,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1841,
+    "UnitId": 124,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1842,
+    "UnitId": 347,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1843,
+    "UnitId": 68,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1844,
+    "UnitId": 333,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1845,
+    "UnitId": 278,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1846,
+    "UnitId": 340,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1847,
+    "UnitId": 341,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1848,
+    "UnitId": 76,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1849,
+    "UnitId": 339,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1850,
+    "UnitId": 530,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1851,
+    "UnitId": 529,
+    "AbilityId": 28
+  },
+  {
+    "Id": 1852,
+    "UnitId": 707,
+    "AbilityId": 11
+  },
+  {
+    "Id": 1853,
+    "UnitId": 708,
+    "AbilityId": 11
+  },
+  {
+    "Id": 1854,
+    "UnitId": 15,
+    "AbilityId": 108
+  },
+  {
+    "Id": 1855,
+    "UnitId": 386,
+    "AbilityId": 108
+  },
+  {
+    "Id": 1856,
+    "UnitId": 387,
+    "AbilityId": 108
   }
 ]

@@ -1015,11 +1015,6 @@
     "SensorId": 23
   },
   {
-    "Id": 596,
-    "UnitId": 344,
-    "SensorId": 3
-  },
-  {
     "Id": 597,
     "UnitId": 345,
     "SensorId": 3
@@ -3043,5 +3038,35 @@
     "Id": 1422,
     "UnitId": 706,
     "SensorId": 41
+  },
+  {
+    "Id": 1423,
+    "UnitId": 344,
+    "SensorId": 1
+  },
+  {
+    "Id": 1424,
+    "UnitId": 707,
+    "SensorId": 23
+  },
+  {
+    "Id": 1425,
+    "UnitId": 708,
+    "SensorId": 23
+  },
+  {
+    "Id": 1427,
+    "UnitId": 710,
+    "SensorId": 2
+  },
+  {
+    "Id": 1428,
+    "UnitId": 711,
+    "SensorId": 2
+  },
+  {
+    "Id": 1430,
+    "UnitId": 713,
+    "SensorId": 25
   }
 ]

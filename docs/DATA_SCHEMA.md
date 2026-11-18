@@ -1,8 +1,8 @@
 # Data schema
 
 The JSON tables in [`../public/data/tables/`](../public/data/tables/), one file
-per table, extracted from the game's `DataBaseCompiled.asset` (build 1.2.0.3,
-24 tables, 16,687 rows — see `public/data/manifest.json`). The tables mirror
+per table, extracted from the game's `DataBaseCompiled.asset` (build 1.2.2.1,
+24 tables, 16,805 rows — see `public/data/manifest.json`). The tables mirror
 the game's `BrokenArrow.DataBase.Models` classes.
 
 This doc describes the tables **and the semantics the app's pipeline applies
@@ -46,7 +46,7 @@ Countries ──< Units >── Type / CategoryType / Role (enums)
 
 ## Table reference
 
-### Units (540)
+### Units (545)
 The unit itself: `Id, Name, HUDName, Description (loc key), CountryId, Cost,
 Type, CategoryType, Role, Length/Width/Height, Weight, Stealth, InfantrySlots,
 MaxStress, TimeModifierRefund, TimeModifierResurrect, ContentMembership,
@@ -70,14 +70,14 @@ ThumbnailFileName, OriginalName, OriginalCost, OwnerInfantryID`.
 ### Countries (3 + DLC)
 `Id, Name, UIName, FlagFileName, Hidden, ContentMembership`.
 
-### Armors (319) — via **UnitArmors** (`UnitId, ArmorId`)
+### Armors (321) — via **UnitArmors** (`UnitId, ArmorId`)
 `ArmorValue, MaxHealthPoints`, and the 8 facing values
 `Kin/HeatArmorFront|Sides|Rear|Top`. `IsDefault` marks the base package;
 alternatives are applied by Options (`Option.ArmorId`). The facing overlay is
 rendered for ground vehicles with nonzero facings; helicopters/planes get an
 "Armor points" stat line instead.
 
-### Mobility (266) — via **UnitPropulsions** (`UnitId, MobilityId`)
+### Mobility (268) — via **UnitPropulsions** (`UnitId, MobilityId`)
 `MaxSpeedRoad, MaxCrossCountrySpeed, MaxSpeedReverse, MaxSpeedWater,
 Acceleration, TurnRate, Agility, ClimbRate, IsAmphibious, IsAirDroppable,
 IsAfterburner, LoiteringTime, FlyPresetId, Weight, HeavyLiftWeight`.
@@ -90,7 +90,7 @@ The card's main sensor is the **first** SensorUnits row — *not* `IsDefault`
 (most units flag several rows default). Planes have `OpticsGround 0`; fall
 back to `max(OpticsLowAltitude, OpticsHighAltitude)`.
 
-### Abilities (78) — via **UnitAbilities** (`UnitId, AbilityId`)
+### Abilities (77) — via **UnitAbilities** (`UnitId, AbilityId`)
 Feature flags + parameters: `IsRadar` (+optics/range modifiers),
 `IsLaserDesignator, IsInfantrySprint, IsSmoke + SmokeAmmunitionQuantity,
 IsAPS + APSQuantity, IsDecoy + DecoyQuantity, ECMAccuracyMultiplier`.
@@ -101,12 +101,12 @@ IsAPS + APSQuantity, IsDecoy + DecoyQuantity, ECMAccuracyMultiplier`.
   updates the existing chip instead of duplicating it.
 - ECM displays as accuracy reduction: multiplier 0.7 → "30%".
 
-### Turrets (1055) — via **TurretUnits** (`UnitId, TurretId, Order`)
+### Turrets (1058) — via **TurretUnits** (`UnitId, TurretId, Order`)
 `IsDefault, ParentTurretId`, rotation limits. See
 [Turret resolution](#turret-resolution) — this join is a **pool of possible
 turrets**, not the mounted layout.
 
-### Weapons (804) — via **TurretWeapons** (`TurretId, WeaponId, Order`)
+### Weapons (812) — via **TurretWeapons** (`TurretId, WeaponId, Order`)
 Display: `Name, HUDName (loc key), HUDIcon, Type (WeaponType enum),
 CanBeMerged, IsUnderbarrel`. Handling: `AimTimeMin/Max, CanShootOnTheMove,
 StabilizerQuality, AutoLoaded, MagazineSize, MagazineReloadTimeMin/Max,
@@ -115,7 +115,7 @@ ShotsPerBurst*, TimeBetweenBursts*, vertical angles`.
   render for infantry (they arrive via SquadMembers, see below).
 - `TurretWeapons.Order` is the display order within a turret.
 
-### Ammunitions (630) — via **WeaponAmmunitions** (`UnitId, WeaponId, AmmunitionId, Order, Quantity`)
+### Ammunitions (644) — via **WeaponAmmunitions** (`UnitId, WeaponId, AmmunitionId, Order, Quantity`)
 The damage model: `Damage, StressDamage, TargetType (UnitType flags),
 ArmorTargeted (1 kinetic / 2 HEAT), PenetrationAtMinRange,
 PenetrationAtGroundRange, TopArmorAttack, HealthAOERadius, MinimalRange,
@@ -128,18 +128,18 @@ HUDName, HUDMultiplier`.
   (Su-24M2's three OFAB-100 racks 14+12+12 → one entry ×38).
 - Range pill = `max(GroundRange, LowAltRange, HighAltRange)`.
 
-### SquadMembers (1134) — infantry only (`UnitId`)
+### SquadMembers (1146) — infantry only (`UnitId`)
 `PrimaryWeaponId, SpecialWeaponId (0 = none), ModelFileName, DeathPriority`.
 **This is the infantry loadout source of truth** — one weapon entry per
 carrying member. Squad size = row count per unit.
 
-### SquadWeapons (706) — infantry only (`UnitId, WeaponId`)
+### SquadWeapons (722) — infantry only (`UnitId, WeaponId`)
 A **superset pool** of weapons associated with the squad, including weapons
 no member carries (upgrade/variant pool, e.g. Airborne Snipers list an XM7
 that isn't in any member's hands). It has no quantity column. **Do not build
 loadouts from it** — the app loads it but does not use it.
 
-### Modifications (615) + Options (2046)
+### Modifications (617) + Options (2051)
 The variant system. `Modifications (UnitId, Type, UIName loc key, Order)`
 are the customization rows shown under the card ("Weapon package",
 "Armor package"); `Options` are the choices within each.

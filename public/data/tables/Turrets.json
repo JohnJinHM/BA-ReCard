@@ -144,6 +144,18 @@
     "HorizontalRotationSpeed": 75.0
   },
   {
+    "Id": 14,
+    "Name": "PylonTurret Hellfire JAGM x4",
+    "ModelFileName": "Weapon/Hellfire/Hellfire_4",
+    "IsDefault": false,
+    "IsDynamicTurret": false,
+    "ParentTurretId": null,
+    "FullRotation": false,
+    "LeftHorizontalAngle": 0.0,
+    "RightHorizontalAngle": 0.0,
+    "HorizontalRotationSpeed": 0.0
+  },
+  {
     "Id": 15,
     "Name": "MainTurret Bradley M2A2 M3A2",
     "ModelFileName": "",
@@ -12658,5 +12670,29 @@
     "LeftHorizontalAngle": -15.0,
     "RightHorizontalAngle": 15.0,
     "HorizontalRotationSpeed": 60.0
+  },
+  {
+    "Id": 1418,
+    "Name": "PylonTurret JAGM x2 ",
+    "ModelFileName": "Weapon/Hellfire/Hellfire_2",
+    "IsDefault": false,
+    "IsDynamicTurret": false,
+    "ParentTurretId": null,
+    "FullRotation": false,
+    "LeftHorizontalAngle": 0.0,
+    "RightHorizontalAngle": 0.0,
+    "HorizontalRotationSpeed": 0.0
+  },
+  {
+    "Id": 1419,
+    "Name": "Zombe Swarm ",
+    "ModelFileName": "",
+    "IsDefault": true,
+    "IsDynamicTurret": false,
+    "ParentTurretId": null,
+    "FullRotation": true,
+    "LeftHorizontalAngle": -180.0,
+    "RightHorizontalAngle": 180.0,
+    "HorizontalRotationSpeed": 999.0
   }
 ]
